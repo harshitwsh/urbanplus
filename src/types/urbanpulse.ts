@@ -1,7 +1,10 @@
 export type NavigationTab = 
   | 'landing'
   | 'login'
+  | 'signup'
+  | 'forgot_password'
   | 'role_selection'
+  | 'dashboard'
   | 'command_center'
   | 'map'
   | 'events'
@@ -17,6 +20,7 @@ export type NavigationTab =
   | 'analytics'
   | 'reports'
   | 'privacy'
+  | 'profile'
   | 'architecture'
   | 'settings';
 
@@ -24,7 +28,8 @@ export type UserRole =
   | 'transport_authority'
   | 'municipal_authority'
   | 'field_officer'
-  | 'administrator';
+  | 'administrator'
+  | 'operator';
 
 export type EventSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED';
@@ -161,6 +166,17 @@ export interface ActionItem {
   updatedAt: string;
   assignedTo?: string;
   notes?: string;
+}
+
+export interface AlertNotification {
+  id: string;
+  title: string;
+  description: string;
+  type: 'CRITICAL_HAZARD' | 'FLEET_ALERT' | 'TRAFFIC_ALERT' | 'INCIDENT_ALERT';
+  severity: EventSeverity;
+  timestamp: string;
+  location: string;
+  read: boolean;
 }
 
 export interface BoundingBox {

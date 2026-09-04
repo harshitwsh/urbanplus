@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { MapMode, MapProviderManager } from './MapProvider';
-import { RoadDefect, Bus } from '../../types/urbanpulse';
+import { RoadDefect, Bus, Incident, ActionItem } from '../../types/urbanpulse';
 import { 
   Navigation, 
   MapPin, 
@@ -15,7 +15,8 @@ import {
   Compass,
   Globe,
   Sliders,
-  Crosshair
+  Crosshair,
+  CheckSquare
 } from 'lucide-react';
 import { EventInspector } from './EventInspector';
 
@@ -32,10 +33,12 @@ export const CesiumMapView: React.FC = () => {
     buses, 
     trafficHotspots, 
     incidents, 
+    actionItems,
     setSelectedDefect, 
     setSelectedBus,
     setActiveTab,
-    selectedDefect
+    selectedDefect,
+    isFirestoreLive
   } = useApp();
 
   const [mapMode, setMapMode] = useState<MapMode>('CITY');
@@ -59,6 +62,7 @@ export const CesiumMapView: React.FC = () => {
     defects: true,
     traffic: true,
     incidents: true,
+    workOrders: true,
     coverage: true
   });
 
@@ -119,12 +123,12 @@ export const CesiumMapView: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div>
             <span className="font-bold text-[#172033] font-sans">3D Geospatial Intelligence</span>
-            <span className="text-[11px] text-[#526174] ml-2 hidden sm:inline">Cesium 3D Engine • Gurugram Corridor</span>
+            <span className="text-[11px] text-[#526174] ml-2 hidden sm:inline">Cesium 3D Engine • Live Firestore Backend</span>
           </div>
 
-          <div className="px-2 py-0.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded text-[10px] font-mono text-[#0F9D8A] font-bold flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#0F9D8A] animate-pulse" />
-            <span>{isGoogleConfigured ? 'GOOGLE 3D TILES ACTIVE' : 'DEMO GIS MODE'}</span>
+          <div className="px-2 py-0.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded text-[10px] font-mono text-[#059669] font-bold flex items-center space-x-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
+            <span>REALTIME FIRESTORE STREAM</span>
           </div>
         </div>
 
@@ -159,13 +163,13 @@ export const CesiumMapView: React.FC = () => {
               className="px-2.5 py-1 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#526174] border border-[#CBD5E1] rounded text-xs font-medium transition flex items-center space-x-1 shadow-sm"
             >
               <Layers className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>Layers ▾</span>
+              <span>Layers ({Object.values(layers).filter(Boolean).length}) ▾</span>
             </button>
 
             {showLayerMenu && (
-              <div className="absolute right-0 top-8 bg-[#FFFFFF] border border-[#E2E8F0] rounded-lg shadow-xl p-3 w-52 z-30 space-y-2 font-mono text-xs text-[#526174]">
+              <div className="absolute right-0 top-8 bg-[#FFFFFF] border border-[#E2E8F0] rounded-lg shadow-xl p-3 w-56 z-30 space-y-2 font-mono text-xs text-[#526174]">
                 <span className="text-[10px] font-bold text-[#8290A3] uppercase block border-b border-[#E2E8F0] pb-1">
-                  LAYER VISIBILITY
+                  FIRESTORE COLLECTIONS
                 </span>
                 <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
                   <input
@@ -174,7 +178,7 @@ export const CesiumMapView: React.FC = () => {
                     onChange={(e) => setLayers({ ...layers, buses: e.target.checked })}
                     className="accent-[#2563EB]"
                   />
-                  <span>Active Sensing Buses</span>
+                  <span>/buses ({buses.length})</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
                   <input
@@ -183,25 +187,34 @@ export const CesiumMapView: React.FC = () => {
                     onChange={(e) => setLayers({ ...layers, defects: e.target.checked })}
                     className="accent-[#D99000]"
                   />
-                  <span>Fused Road Defects</span>
+                  <span>/events ({roadDefects.length})</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
+                  <input
+                    type="checkbox"
+                    checked={layers.incidents}
+                    onChange={(e) => setLayers({ ...layers, incidents: e.target.checked })}
+                    className="accent-[#DC2626]"
+                  />
+                  <span>/incidents ({incidents.length})</span>
+                </label>
+                <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
+                  <input
+                    type="checkbox"
+                    checked={layers.workOrders}
+                    onChange={(e) => setLayers({ ...layers, workOrders: e.target.checked })}
+                    className="accent-[#6366F1]"
+                  />
+                  <span>/workOrders ({actionItems.length})</span>
                 </label>
                 <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
                   <input
                     type="checkbox"
                     checked={layers.traffic}
                     onChange={(e) => setLayers({ ...layers, traffic: e.target.checked })}
-                    className="accent-[#2563EB]"
+                    className="accent-[#059669]"
                   />
-                  <span>Traffic Density Corridors</span>
-                </label>
-                <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
-                  <input
-                    type="checkbox"
-                    checked={layers.coverage}
-                    onChange={(e) => setLayers({ ...layers, coverage: e.target.checked })}
-                    className="accent-[#0F9D8A]"
-                  />
-                  <span>AI Coverage Corridors</span>
+                  <span>Traffic Corridors</span>
                 </label>
               </div>
             )}
@@ -249,15 +262,16 @@ export const CesiumMapView: React.FC = () => {
             )}
           </div>
 
-          {/* Dynamic 3D Entities on Map */}
+          {/* Dynamic 3D Entities on Map from Firestore */}
           <div className="relative z-10 flex-1 my-2">
-            {/* Active Bus Fleet Entity Nodes */}
+            {/* 1. Active Bus Fleet Entities (/buses) */}
             {layers.buses && buses.map((bus, idx) => {
               const positions = [
                 { top: '32%', left: '28%' },
                 { top: '48%', left: '45%' },
                 { top: '68%', left: '62%' },
                 { top: '24%', left: '78%' },
+                { top: '75%', left: '35%' },
               ];
               const pos = positions[idx % positions.length];
 
@@ -272,18 +286,19 @@ export const CesiumMapView: React.FC = () => {
                     <BusIcon className="w-3.5 h-3.5 text-white" />
                   </div>
                   <div className="absolute top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#FFFFFF] border border-[#E2E8F0] rounded text-[10px] font-mono text-[#172033] shadow-md whitespace-nowrap">
-                    {bus.id} ({bus.speed} km/h)
+                    {bus.id} ({bus.speed || 0} km/h)
                   </div>
                 </div>
               );
             })}
 
-            {/* Fused Road Defect Entities */}
-            {layers.defects && roadDefects.slice(0, 4).map((defect, idx) => {
+            {/* 2. Fused Road Defect / Event Entities (/events) */}
+            {layers.defects && roadDefects.slice(0, 5).map((defect, idx) => {
               const positions = [
                 { top: '40%', left: '36%' },
                 { top: '55%', left: '50%' },
                 { top: '28%', left: '68%' },
+                { top: '62%', left: '22%' },
               ];
               const pos = positions[idx % positions.length];
 
@@ -301,7 +316,57 @@ export const CesiumMapView: React.FC = () => {
                     <AlertTriangle className="w-4 h-4 text-white" />
                   </div>
                   <div className="absolute top-8 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#FFFFFF] border border-[#E2E8F0] rounded text-[10px] font-mono text-[#D99000] font-bold shadow-md whitespace-nowrap">
-                    {defect.code} • {defect.fusionConfidence}%
+                    {defect.code} • {defect.fusionConfidence || defect.initialConfidence}%
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 3. Incidents (/incidents) */}
+            {layers.incidents && incidents.slice(0, 3).map((incident, idx) => {
+              const positions = [
+                { top: '22%', left: '42%' },
+                { top: '58%', left: '74%' },
+              ];
+              const pos = positions[idx % positions.length];
+
+              return (
+                <div
+                  key={incident.id}
+                  style={{ top: pos.top, left: pos.left }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                  onClick={() => setActiveTab('incidents')}
+                >
+                  <div className="w-6 h-6 rounded-md bg-[#DC2626] border-2 border-white flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                    <ShieldAlert className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div className="absolute top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#FFFFFF] border border-[#E2E8F0] rounded text-[10px] font-mono text-[#DC2626] font-bold shadow-md whitespace-nowrap">
+                    {incident.code} • {incident.type}
+                  </div>
+                </div>
+              );
+            })}
+
+            {/* 4. Work Orders (/workOrders) */}
+            {layers.workOrders && actionItems.slice(0, 3).map((wo, idx) => {
+              const positions = [
+                { top: '46%', left: '80%' },
+                { top: '70%', left: '48%' },
+              ];
+              const pos = positions[idx % positions.length];
+
+              return (
+                <div
+                  key={wo.id}
+                  style={{ top: pos.top, left: pos.left }}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 group cursor-pointer"
+                  onClick={() => setActiveTab('actions')}
+                >
+                  <div className="w-6 h-6 rounded-full bg-[#6366F1] border-2 border-white flex items-center justify-center shadow-lg group-hover:scale-110 transition">
+                    <CheckSquare className="w-3.5 h-3.5 text-white" />
+                  </div>
+                  <div className="absolute top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#FFFFFF] border border-[#E2E8F0] rounded text-[10px] font-mono text-[#6366F1] font-bold shadow-md whitespace-nowrap">
+                    {wo.code} • {wo.status}
                   </div>
                 </div>
               );

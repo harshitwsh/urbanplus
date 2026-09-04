@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 import { SimulationController } from './SimulationController';
@@ -22,18 +23,58 @@ import { MobilityAnalyticsView } from '../analytics/MobilityAnalyticsView';
 import { ReportsView } from '../reports/ReportsView';
 import { AIArchitectureView } from '../architecture/AIArchitectureView';
 import { SettingsView } from '../system/SettingsView';
+import { UserProfileView } from '../profile/UserProfileView';
+import { Loader2 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
   const { activeTab } = useApp();
+  const { user, loading, isAuthenticated } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // Standalone full-screen pages
+  // 1. Show loading state while Firebase authentication state is being checked
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center space-y-4 font-sans select-none">
+        <div className="w-12 h-12 rounded-xl bg-[#2563EB] flex items-center justify-center font-bold text-white text-base font-mono shadow-md animate-pulse">
+          UP
+        </div>
+        <div className="flex items-center space-x-2 text-xs font-mono text-[#64748B]">
+          <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
+          <span>VERIFYING URBANPULSE FIREBASE AUTHENTICATION...</span>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Make Authentication the First Experience: if user is NOT logged in, show Login/Signup (or Landing if chosen)
+  if (!user && !isAuthenticated) {
+    if (activeTab === 'landing') {
+      return <LandingPage />;
+    }
+    if (activeTab === 'signup') {
+      return <LoginView initialMode="SIGNUP" />;
+    }
+    if (activeTab === 'forgot_password') {
+      return <LoginView initialMode="FORGOT_PASSWORD" />;
+    }
+    return <LoginView initialMode="LOGIN" />;
+  }
+
+  // Standalone full-screen pages for authenticated user
   if (activeTab === 'landing') {
     return <LandingPage />;
   }
 
   if (activeTab === 'login') {
-    return <LoginView />;
+    return <LoginView initialMode="LOGIN" />;
+  }
+
+  if (activeTab === 'signup') {
+    return <LoginView initialMode="SIGNUP" />;
+  }
+
+  if (activeTab === 'forgot_password') {
+    return <LoginView initialMode="FORGOT_PASSWORD" />;
   }
 
   if (activeTab === 'role_selection') {
@@ -42,8 +83,11 @@ export const AppShell: React.FC = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'dashboard':
       case 'command_center':
         return <CommandCenter />;
+      case 'profile':
+        return <UserProfileView />;
       case 'map':
         return <GISMap />;
       case 'fusion':

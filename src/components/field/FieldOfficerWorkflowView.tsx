@@ -1,20 +1,56 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { ActionItem } from '../../types/urbanpulse';
-import { HardHat, MapPin, CheckCircle2, Camera, Upload, Clock, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { uploadAndSaveWorkOrderProof } from '../../services/storageService';
+import { HardHat, MapPin, CheckCircle2, Camera, Upload, Clock, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 
 export const FieldOfficerWorkflowView: React.FC = () => {
   const { actionItems, updateActionStatus, setSelectedDefect, roadDefects, setActiveTab } = useApp();
 
-  const [selectedTask, setSelectedTask] = useState<ActionItem>(actionItems[0]);
+  const [selectedTask, setSelectedTask] = useState<ActionItem>(actionItems[0] || {} as ActionItem);
   const [fieldNote, setFieldNote] = useState<string>('');
-  const [photoUploaded, setPhotoUploaded] = useState<boolean>(false);
-  const [taskStatus, setTaskStatus] = useState<ActionItem['status']>(selectedTask.status);
+  const [taskStatus, setTaskStatus] = useState<ActionItem['status']>(selectedTask?.status || 'ASSIGNED');
+  
+  // Storage Upload State
+  const [isUploading, setIsUploading] = useState<boolean>(false);
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null);
+  const [uploadMessage, setUploadMessage] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpdateStatus = (newStatus: ActionItem['status']) => {
+  const handleUpdateStatus = async (newStatus: ActionItem['status']) => {
     setTaskStatus(newStatus);
-    updateActionStatus(selectedTask.id, newStatus);
+    if (selectedTask?.id) {
+      await updateActionStatus(selectedTask.id, newStatus);
+    }
   };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedTask?.id) return;
+
+    setIsUploading(true);
+    setUploadMessage('Uploading repair evidence to Firebase Storage...');
+
+    try {
+      const result = await uploadAndSaveWorkOrderProof(selectedTask.id, file);
+      setUploadedImageUrl(result.downloadUrl);
+      setUploadMessage('✓ Evidence uploaded & synced to Firestore');
+      setTaskStatus('RESOLVED');
+    } catch (err: any) {
+      console.error('Storage upload failed:', err);
+      setUploadMessage(`Upload failed: ${err.message || 'Check storage permissions'}`);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  if (!selectedTask || !selectedTask.id) {
+    return (
+      <div className="p-8 text-center text-xs text-[#64748B] font-mono">
+        Loading active work orders from Firestore...
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 space-y-5 max-w-4xl mx-auto select-none font-sans bg-[#F7F8FA]">
@@ -50,7 +86,8 @@ export const FieldOfficerWorkflowView: React.FC = () => {
                 onClick={() => {
                   setSelectedTask(item);
                   setTaskStatus(item.status);
-                  setPhotoUploaded(false);
+                  setUploadedImageUrl(null);
+                  setUploadMessage(null);
                 }}
                 className={`p-3 rounded-lg border transition cursor-pointer space-y-1.5 ${
                   isSelected
@@ -88,7 +125,7 @@ export const FieldOfficerWorkflowView: React.FC = () => {
             <h3 className="text-base font-bold text-[#172033] mt-1">{selectedTask.title}</h3>
             <p className="text-xs text-[#64748B] flex items-center space-x-1 mt-0.5">
               <MapPin className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>{selectedTask.location} ({selectedTask.lat.toFixed(4)}, {selectedTask.lng.toFixed(4)})</span>
+              <span>{selectedTask.location} ({selectedTask.lat?.toFixed(4)}, {selectedTask.lng?.toFixed(4)})</span>
             </p>
           </div>
 
@@ -132,28 +169,59 @@ export const FieldOfficerWorkflowView: React.FC = () => {
           </div>
         </div>
 
-        {/* Upload Field Evidence Photo */}
+        {/* Upload Field Evidence Photo to Firebase Storage */}
         <div className="space-y-2">
           <label className="text-xs font-semibold text-[#172033] font-mono uppercase tracking-wider block">
-            FIELD REPAIR EVIDENCE PHOTO
+            FIELD REPAIR EVIDENCE PHOTO (FIREBASE STORAGE)
           </label>
 
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            accept="image/*"
+            className="hidden"
+          />
+
           <div className="p-4 bg-[#F8FAFC] border-2 border-dashed border-[#CBD5E1] rounded-lg text-center space-y-2">
-            {photoUploaded ? (
-              <div className="flex items-center justify-center space-x-2 text-[#059669] font-mono text-xs font-bold">
-                <CheckCircle2 className="w-5 h-5" />
-                <span>Repair Evidence Photo Attached (image_field_proof_4091.jpg)</span>
+            {uploadedImageUrl ? (
+              <div className="space-y-2">
+                <div className="flex items-center justify-center space-x-2 text-[#059669] font-mono text-xs font-bold">
+                  <CheckCircle2 className="w-5 h-5" />
+                  <span>Repair Evidence Stored in Firebase Storage</span>
+                </div>
+                <img
+                  src={uploadedImageUrl}
+                  alt="Field Repair Evidence"
+                  className="max-h-48 mx-auto rounded-lg border border-[#E2E8F0] shadow-sm object-cover"
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-[11px] text-[#2563EB] hover:underline block mx-auto"
+                >
+                  Upload a replacement photo
+                </button>
               </div>
             ) : (
               <>
                 <Camera className="w-6 h-6 text-[#64748B] mx-auto" />
-                <p className="text-xs text-[#64748B]">Capture on-site repair image with smartphone camera</p>
+                <p className="text-xs text-[#64748B]">Capture on-site repair image to store at workOrders/{selectedTask.id}/</p>
+                {uploadMessage && (
+                  <p className="text-xs font-mono text-[#2563EB]">{uploadMessage}</p>
+                )}
                 <button
-                  onClick={() => setPhotoUploaded(true)}
-                  className="px-3.5 py-1.5 bg-[#FFFFFF] hover:bg-[#F1F4F7] text-[#172033] border border-[#CBD5E1] text-xs font-medium rounded-md transition shadow-sm inline-flex items-center space-x-1"
+                  type="button"
+                  disabled={isUploading}
+                  onClick={() => fileInputRef.current?.click()}
+                  className="px-3.5 py-1.5 bg-[#FFFFFF] hover:bg-[#F1F4F7] text-[#172033] border border-[#CBD5E1] text-xs font-medium rounded-md transition shadow-sm inline-flex items-center space-x-1.5 disabled:opacity-60"
                 >
-                  <Upload className="w-3.5 h-3.5" />
-                  <span>Upload Field Photo</span>
+                  {isUploading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin text-[#2563EB]" />
+                  ) : (
+                    <Upload className="w-3.5 h-3.5 text-[#2563EB]" />
+                  )}
+                  <span>{isUploading ? 'Uploading to Firebase...' : 'Upload Field Photo'}</span>
                 </button>
               </>
             )}
@@ -178,7 +246,7 @@ export const FieldOfficerWorkflowView: React.FC = () => {
         <div className="flex justify-end space-x-3 pt-2">
           <button
             onClick={() => {
-              const def = roadDefects.find(d => d.code === selectedTask.code);
+              const def = roadDefects.find(d => d.code === selectedTask.code || d.id === selectedTask.defectId);
               if (def) {
                 setSelectedDefect(def);
                 setActiveTab('fusion');

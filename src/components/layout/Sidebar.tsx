@@ -1,5 +1,6 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { NavigationTab } from '../../types/urbanpulse';
 import { 
   LayoutDashboard, 
@@ -17,7 +18,10 @@ import {
   Settings,
   HardHat,
   LogOut,
-  X
+  X,
+  Building2,
+  User as UserIcon,
+  Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -26,7 +30,8 @@ interface SidebarProps {
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
-  const { activeTab, setActiveTab, userRole, setIsLoggedIn } = useApp();
+  const { activeTab, setActiveTab, userRole } = useApp();
+  const { user, userProfile, logout } = useAuth();
 
   const navGroups: {
     title: string;
@@ -67,6 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
     {
       title: 'SYSTEM',
       items: [
+        { id: 'profile', label: 'Operator Profile', icon: UserIcon },
         { id: 'architecture', label: 'AI Architecture', icon: Cpu },
         { id: 'settings', label: 'Settings & Privacy', icon: Settings },
       ]
@@ -77,6 +83,21 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
     setActiveTab(tab);
     if (onCloseMobile) onCloseMobile();
   };
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      handleSelectTab('login');
+    } catch (err) {
+      console.error('Sign out error:', err);
+    }
+  };
+
+  const fullName = userProfile?.fullName || userProfile?.name || user?.displayName || user?.email?.split('@')[0] || 'UrbanPulse Operator';
+  const email = user?.email || userProfile?.email || '';
+  const organization = userProfile?.organization || 'UrbanPulse Command';
+  const role = userProfile?.role || userRole;
+  const photoURL = user?.photoURL;
 
   const sidebarContent = (
     <div className="flex flex-col justify-between h-full select-none font-sans bg-[#FFFFFF]">
@@ -114,7 +135,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
               <div className="space-y-0.5">
                 {group.items.map((item) => {
                   const Icon = item.icon;
-                  const isActive = activeTab === item.id;
+                  const isActive = activeTab === item.id || (item.id === 'command_center' && activeTab === 'dashboard');
                   return (
                     <button
                       key={item.id}
@@ -139,30 +160,46 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
         </div>
       </div>
 
-      {/* Bottom Profile Footer */}
+      {/* User Profile Area (Photo, Name, Email, Organization, Role) */}
       <div className="p-3 border-t border-[#E2E8F0] bg-[#F8FAFC] space-y-2">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center space-x-2 truncate">
-            <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs shrink-0">
-              TA
-            </div>
-            <div className="truncate">
-              <span className="font-semibold text-[#172033] block truncate text-[11px]">
-                {userRole.replace('_', ' ').toUpperCase()}
+        <div className="flex items-center justify-between">
+          <div 
+            onClick={() => handleSelectTab('profile')}
+            className="flex items-center space-x-2.5 min-w-0 flex-1 cursor-pointer group"
+            title="View Profile Details"
+          >
+            {photoURL ? (
+              <img
+                src={photoURL}
+                alt={fullName}
+                className="w-8 h-8 rounded-full border border-[#CBD5E1] object-cover shrink-0 group-hover:ring-2 group-hover:ring-[#2563EB] transition"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 uppercase shadow-xs group-hover:ring-2 group-hover:ring-blue-400 transition">
+                {fullName.substring(0, 2)}
+              </div>
+            )}
+            <div className="min-w-0 flex-1">
+              <span className="font-bold text-[#172033] block truncate text-xs group-hover:text-[#2563EB] transition" title={fullName}>
+                {fullName}
               </span>
-              <span className="text-[10px] text-[#64748B] block truncate">Gurugram Smart City</span>
+              <span className="text-[10px] text-[#64748B] block truncate" title={email}>
+                {email}
+              </span>
+              <div className="flex items-center space-x-1 text-[9px] text-[#2563EB] font-mono truncate pt-0.5">
+                <span className="uppercase font-semibold">{role.replace('_', ' ')}</span>
+                <span>•</span>
+                <span className="text-[#64748B] truncate">{organization}</span>
+              </div>
             </div>
           </div>
 
           <button
-            onClick={() => {
-              setIsLoggedIn(false);
-              handleSelectTab('landing');
-            }}
-            title="Sign Out"
-            className="p-1 text-[#8290A3] hover:text-[#DC4C5A] rounded"
+            onClick={handleSignOut}
+            title="Sign Out of Firebase"
+            className="p-1.5 text-[#8290A3] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-md transition shrink-0 ml-1"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>

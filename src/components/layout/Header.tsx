@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/urbanpulse';
-import { Play, Pause, Clock, Sparkles, Menu, X } from 'lucide-react';
+import { Play, Pause, Clock, Sparkles, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
 import { DemoGuideModal } from './DemoGuideModal';
 
 interface HeaderProps {
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenuOpen }) => {
   const { userRole, setUserRole, isDemoRunning, setIsDemoRunning, activeTab, setActiveTab } = useApp();
+  const { user, userProfile, logout } = useAuth();
   const [timeString, setTimeString] = useState<string>('');
   const [showDemoGuide, setShowDemoGuide] = useState<boolean>(false);
 
@@ -23,6 +25,18 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
     const interval = setInterval(updateTime, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleSignOut = async () => {
+    try {
+      await logout();
+      setActiveTab('login');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  const displayName = userProfile?.name || userProfile?.fullName || user?.displayName || user?.email?.split('@')[0] || 'Operator';
+  const photoURL = user?.photoURL;
 
   return (
     <>
@@ -58,9 +72,10 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
             </div>
           </div>
 
+          {/* Firebase Real-Time Status Badge */}
           <div className="hidden xl:flex items-center space-x-1.5 px-2.5 py-0.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded-md text-[11px] font-mono text-[#059669] font-semibold">
             <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
-            <span>● DEMO SYSTEM ONLINE</span>
+            <span>● FIREBASE BACKEND ONLINE</span>
           </div>
         </div>
 
@@ -83,6 +98,7 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
               <option value="municipal_authority">Municipal Authority</option>
               <option value="field_officer">Field Officer</option>
               <option value="administrator">Administrator</option>
+              <option value="operator">Operator</option>
             </select>
           </div>
 
@@ -106,6 +122,38 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
             {isDemoRunning ? <Pause className="w-3.5 h-3.5 fill-current" /> : <Play className="w-3.5 h-3.5 fill-current" />}
             <span>{isDemoRunning ? 'Pause' : '▶ RUN DEMO'}</span>
           </button>
+
+          {/* Logged in User Profile Avatar in Header */}
+          {user && (
+            <div 
+              onClick={() => setActiveTab('profile')}
+              className="flex items-center space-x-2 pl-1 cursor-pointer group"
+              title={`View profile for ${displayName}`}
+            >
+              {photoURL ? (
+                <img
+                  src={photoURL}
+                  alt={displayName}
+                  className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover group-hover:ring-2 group-hover:ring-[#2563EB] transition"
+                />
+              ) : (
+                <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs uppercase shadow-xs group-hover:ring-2 group-hover:ring-blue-400 transition">
+                  {displayName.substring(0, 2)}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Logout Button if Authenticated */}
+          {user && (
+            <button
+              onClick={handleSignOut}
+              title="Sign Out of Firebase"
+              className="p-1.5 bg-[#F8FAFC] hover:bg-[#FEF2F2] text-[#64748B] hover:text-[#DC2626] border border-[#E2E8F0] hover:border-[#FECACA] rounded-md transition"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </header>
 

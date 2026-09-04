@@ -1,10 +1,12 @@
 import React from 'react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/urbanpulse';
 import { Bus, Building2, HardHat, ShieldCheck, ArrowRight } from 'lucide-react';
 
 export const RoleSelectionView: React.FC = () => {
-  const { setUserRole, setActiveTab, setIsLoggedIn } = useApp();
+  const { setUserRole, setActiveTab } = useApp();
+  const { userProfile } = useAuth();
 
   const roles: {
     id: UserRole;
@@ -55,7 +57,6 @@ export const RoleSelectionView: React.FC = () => {
 
   const handleSelectRole = (role: UserRole, targetTab: any) => {
     setUserRole(role);
-    setIsLoggedIn(true);
     setActiveTab(targetTab);
   };
 
@@ -89,6 +90,7 @@ export const RoleSelectionView: React.FC = () => {
           </h2>
           <p className="text-xs md:text-sm text-[#64748B]">
             UrbanPulse adapts its workspace hierarchy to your official municipal role.
+            {userProfile?.name && <span className="block mt-1 font-semibold text-[#2563EB]">Authenticated as {userProfile.name}</span>}
           </p>
         </div>
 

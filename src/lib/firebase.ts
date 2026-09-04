@@ -1,6 +1,6 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 // Support Vercel / Vite environment variables with production defaults
@@ -30,5 +30,24 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 
 console.log("🔥 FIRESTORE INITIALIZED:", db.app.options.projectId);
+
+// Temporary Firestore connection test
+(async () => {
+  try {
+    const testDocRef = doc(db, "connectionTest", "testDoc");
+    await setDoc(testDocRef, {
+      testMessage: "Firestore connection test",
+      timestamp: serverTimestamp()
+    });
+    const docSnap = await getDoc(testDocRef);
+    if (docSnap.exists()) {
+      console.log("🔥 FIREBASE CONNECTION SUCCESS", docSnap.data());
+    } else {
+      console.log("🔥 FIREBASE CONNECTION SUCCESS");
+    }
+  } catch (error) {
+    console.error("🔥 FIREBASE CONNECTION FAILED:", error);
+  }
+})();
 
 export default app;

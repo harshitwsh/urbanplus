@@ -45,8 +45,6 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
       title: 'COMMAND',
       items: [
         { id: 'command_center', label: 'Command Center', icon: LayoutDashboard },
-        { id: 'map', label: 'Live City Map', icon: Map },
-        { id: 'globe', label: '3D Intelligence Globe', icon: Globe },
       ]
     },
     {

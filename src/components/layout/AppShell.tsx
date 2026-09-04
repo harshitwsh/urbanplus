@@ -10,7 +10,6 @@ import { LoginView } from '../auth/LoginView';
 import { EmailVerificationView } from '../auth/EmailVerificationView';
 import { RoleSelectionView } from '../auth/RoleSelectionView';
 import { CommandCenter } from '../dashboard/CommandCenter';
-import { GISMap } from '../map/GISMap';
 import { EvidenceFusionView } from '../evidence/EvidenceFusionView';
 import { EdgeVisionSimulator } from '../vision/EdgeVisionSimulator';
 import { RoadConditionView } from '../road/RoadConditionView';
@@ -27,7 +26,6 @@ import { SettingsView } from '../system/SettingsView';
 import { UserProfileView } from '../profile/UserProfileView';
 import { CitizenReportView } from '../citizen/CitizenReportView';
 import { MyReportsView } from '../citizen/MyReportsView';
-import { ThreeDGlobeView } from '../globe/ThreeDGlobeView';
 import { DashcamIntelligenceView } from '../dashcam/DashcamIntelligenceView';
 import { MobileCityEyesView } from '../dashcam/MobileCityEyesView';
 import { Logo } from '../common/Logo';
@@ -92,8 +90,6 @@ export const AppShell: React.FC = () => {
         return <CommandCenter />;
       case 'profile':
         return <UserProfileView />;
-      case 'map':
-        return <GISMap />;
       case 'fusion':
         return <EvidenceFusionView />;
       case 'vision':
@@ -126,8 +122,6 @@ export const AppShell: React.FC = () => {
         return <CitizenReportView />;
       case 'my_reports':
         return <MyReportsView />;
-      case 'globe':
-        return <ThreeDGlobeView />;
       case 'dashcam':
         return <DashcamIntelligenceView />;
       case 'mobile_eyes':
@@ -137,7 +131,7 @@ export const AppShell: React.FC = () => {
     }
   };
 
-  const isMapTab = activeTab === 'map';
+  const isMapTab = false;
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F7F8FA] font-sans select-none">

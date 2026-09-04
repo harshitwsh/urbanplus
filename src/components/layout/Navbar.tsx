@@ -54,7 +54,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJudgeGuide }) => {
 
   const navItems: { id: NavigationTab; label: string; icon: React.FC<{ className?: string }>; badge?: string }[] = [
     { id: 'command_center', label: 'Command Center', icon: Activity },
-    { id: 'map', label: 'Live GIS Map', icon: Map },
     { id: 'fusion', label: 'Evidence Fusion', icon: Layers, badge: 'CORE' },
     { id: 'vision', label: 'Edge AI Vision', icon: Eye },
     { id: 'road', label: 'Road Intelligence', icon: AlertTriangle },

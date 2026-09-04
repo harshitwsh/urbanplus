@@ -44,7 +44,11 @@ type LocationStatus =
   | 'LOCATION UNAVAILABLE' 
   | 'IDLE';
 
-export const CesiumMapView: React.FC = () => {
+export interface CesiumMapViewProps {
+  onSwitchTo2D?: () => void;
+}
+
+export const CesiumMapView: React.FC<CesiumMapViewProps> = ({ onSwitchTo2D }) => {
   const { 
     roadDefects, 
     buses, 
@@ -770,12 +774,15 @@ export const CesiumMapView: React.FC = () => {
           {/* 2D / 3D Globe Mode Switcher */}
           <div className="flex bg-[#F8FAFC] p-0.5 border border-[#E2E8F0] rounded-lg text-[11px]">
             <button
-              onClick={() => toggleSceneMode(false)}
+              onClick={() => {
+                toggleSceneMode(false);
+                if (onSwitchTo2D) onSwitchTo2D();
+              }}
               className={`px-2.5 py-1 rounded-md transition font-semibold ${
                 !is3D ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#64748B] hover:text-[#172033]'
               }`}
             >
-              2D
+              2D Map
             </button>
             <button
               onClick={() => toggleSceneMode(true)}
@@ -783,9 +790,18 @@ export const CesiumMapView: React.FC = () => {
                 is3D ? 'bg-[#2563EB] text-white shadow-xs' : 'text-[#64748B] hover:text-[#172033]'
               }`}
             >
-              3D GLOBE
+              3D Cesium Globe
             </button>
           </div>
+
+          {onSwitchTo2D && (
+            <button
+              onClick={onSwitchTo2D}
+              className="px-3 py-1 bg-[#2563EB] hover:bg-blue-700 text-white font-bold rounded-lg transition text-[11px] font-mono shadow-xs flex items-center space-x-1"
+            >
+              <span>← Switch to 2D Map</span>
+            </button>
+          )}
         </div>
       </div>
 

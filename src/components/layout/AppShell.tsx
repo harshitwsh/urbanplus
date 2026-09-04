@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { Header } from './Header';
@@ -7,6 +7,7 @@ import { SimulationController } from './SimulationController';
 
 import { LandingPage } from '../landing/LandingPage';
 import { LoginView } from '../auth/LoginView';
+import { EmailVerificationView } from '../auth/EmailVerificationView';
 import { RoleSelectionView } from '../auth/RoleSelectionView';
 import { CommandCenter } from '../dashboard/CommandCenter';
 import { GISMap } from '../map/GISMap';
@@ -27,11 +28,20 @@ import { UserProfileView } from '../profile/UserProfileView';
 import { Loader2 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
-  const { activeTab } = useApp();
-  const { user, loading, isAuthenticated } = useAuth();
+  const { activeTab, setActiveTab } = useApp();
+  const { user, loading, isAuthenticated, isEmailVerified } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
-  // 1. Show loading state while Firebase authentication state is being checked
+  // If a logged-in & verified user visits login or signup, redirect directly to dashboard
+  useEffect(() => {
+    if (!loading && isAuthenticated && isEmailVerified) {
+      if (activeTab === 'login' || activeTab === 'signup' || activeTab === 'verify_email') {
+        setActiveTab('command_center');
+      }
+    }
+  }, [loading, isAuthenticated, isEmailVerified, activeTab, setActiveTab]);
+
+  // 1. Show authentication loading state while checking Firebase to prevent flicker
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center space-y-4 font-sans select-none">
@@ -46,7 +56,7 @@ export const AppShell: React.FC = () => {
     );
   }
 
-  // 2. Make Authentication the First Experience: if user is NOT logged in, show Login/Signup (or Landing if chosen)
+  // 2. Unauthenticated User Flow: Show Landing, Login, Signup, or Forgot Password
   if (!user && !isAuthenticated) {
     if (activeTab === 'landing') {
       return <LandingPage />;
@@ -60,7 +70,15 @@ export const AppShell: React.FC = () => {
     return <LoginView initialMode="LOGIN" />;
   }
 
-  // Standalone full-screen pages for authenticated user
+  // 3. User is signed in but email is NOT verified yet (and not Google user)
+  if (user && !user.emailVerified) {
+    if (activeTab === 'landing') {
+      return <LandingPage />;
+    }
+    return <EmailVerificationView />;
+  }
+
+  // 4. Authenticated & Verified User Views
   if (activeTab === 'landing') {
     return <LandingPage />;
   }
@@ -75,6 +93,10 @@ export const AppShell: React.FC = () => {
 
   if (activeTab === 'forgot_password') {
     return <LoginView initialMode="FORGOT_PASSWORD" />;
+  }
+
+  if (activeTab === 'verify_email') {
+    return <EmailVerificationView />;
   }
 
   if (activeTab === 'role_selection') {

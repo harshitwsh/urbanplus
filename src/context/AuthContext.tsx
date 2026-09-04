@@ -5,10 +5,15 @@ import {
   createUserWithEmailAndPassword, 
   signOut, 
   sendPasswordResetEmail, 
+  sendEmailVerification,
+  reload,
   signInWithPopup, 
   GoogleAuthProvider,
   onAuthStateChanged,
-  updateProfile
+  updateProfile,
+  setPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence
 } from 'firebase/auth';
 import { 
   doc, 
@@ -23,11 +28,12 @@ import { DEMO_ACCOUNTS } from '../services/AuthProvider';
 
 export interface UserProfile {
   uid: string;
-  fullName: string;
   name: string;
+  fullName: string;
   email: string;
   organization: string;
   role: string;
+  emailVerified: boolean;
   createdAt?: any;
   lastLogin?: any;
   active?: boolean;
@@ -38,11 +44,15 @@ export interface AuthContextType {
   userProfile: UserProfile | null;
   loading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, fullName: string, organization?: string) => Promise<void>;
+  isEmailVerified: boolean;
+  login: (email: string, password: string, staySignedIn?: boolean) => Promise<User>;
+  signup: (email: string, password: string, fullName: string, organization?: string, staySignedIn?: boolean) => Promise<User>;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: (staySignedIn?: boolean) => Promise<User>;
+  sendVerificationEmail: () => Promise<void>;
+  checkEmailVerification: () => Promise<boolean>;
+  reloadUser: () => Promise<User | null>;
   demoAccounts: typeof DEMO_ACCOUNTS;
   session?: {
     user: {
@@ -65,49 +75,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Sync user profile from Firestore users/{uid}
   const syncUserProfile = async (firebaseUser: User, fallbackName?: string, fallbackOrg?: string): Promise<UserProfile> => {
     const userDocRef = doc(db, 'users', firebaseUser.uid);
-    const userDocSnap = await getDoc(userDocRef);
+    try {
+      const userDocSnap = await getDoc(userDocRef);
 
-    if (userDocSnap.exists()) {
-      const data = userDocSnap.data();
-      // Update lastLogin timestamp in Firestore
-      await updateDoc(userDocRef, {
-        lastLogin: serverTimestamp(),
-        active: true
-      }).catch(() => {});
+      if (userDocSnap.exists()) {
+        const data = userDocSnap.data();
+        // Update lastLogin and emailVerified in Firestore
+        await updateDoc(userDocRef, {
+          lastLogin: serverTimestamp(),
+          emailVerified: firebaseUser.emailVerified,
+          name: firebaseUser.displayName || data.name || data.fullName || fallbackName || 'UrbanPulse Operator',
+          active: true
+        }).catch(() => {});
 
-      const profile: UserProfile = {
+        const profile: UserProfile = {
+          uid: firebaseUser.uid,
+          name: data.name || data.fullName || firebaseUser.displayName || fallbackName || 'UrbanPulse Operator',
+          fullName: data.fullName || data.name || firebaseUser.displayName || fallbackName || 'UrbanPulse Operator',
+          email: firebaseUser.email || data.email || '',
+          organization: data.organization || fallbackOrg || 'UrbanPulse',
+          role: data.role || 'operator',
+          emailVerified: firebaseUser.emailVerified,
+          createdAt: data.createdAt,
+          lastLogin: new Date(),
+          active: data.active ?? true
+        };
+        setUserProfile(profile);
+        return profile;
+      } else {
+        // Create user document in Firestore on first signup / Google login
+        const displayName = fallbackName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'UrbanPulse Operator';
+        const org = fallbackOrg || 'UrbanPulse';
+        
+        const newProfile: UserProfile = {
+          uid: firebaseUser.uid,
+          name: displayName,
+          fullName: displayName,
+          email: firebaseUser.email || '',
+          organization: org,
+          role: 'operator',
+          emailVerified: firebaseUser.emailVerified,
+          createdAt: serverTimestamp(),
+          lastLogin: serverTimestamp(),
+          active: true
+        };
+
+        await setDoc(userDocRef, newProfile);
+        setUserProfile(newProfile);
+        return newProfile;
+      }
+    } catch (err) {
+      console.warn('Firestore profile sync note:', err);
+      const fallbackProfile: UserProfile = {
         uid: firebaseUser.uid,
-        fullName: data.fullName || data.name || firebaseUser.displayName || 'UrbanPulse Operator',
-        name: data.fullName || data.name || firebaseUser.displayName || 'UrbanPulse Operator',
-        email: firebaseUser.email || data.email || '',
-        organization: data.organization || 'City Operations Center',
-        role: data.role || 'operator',
-        createdAt: data.createdAt,
-        lastLogin: new Date(),
-        active: data.active ?? true
-      };
-      setUserProfile(profile);
-      return profile;
-    } else {
-      // First-time signup / Google sign-in document creation
-      const name = fallbackName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'UrbanPulse Operator';
-      const org = fallbackOrg || 'Gurugram Metropolitan Development Authority';
-      
-      const newProfile: UserProfile = {
-        uid: firebaseUser.uid,
-        fullName: name,
-        name: name,
+        name: firebaseUser.displayName || fallbackName || 'UrbanPulse Operator',
+        fullName: firebaseUser.displayName || fallbackName || 'UrbanPulse Operator',
         email: firebaseUser.email || '',
-        organization: org,
+        organization: fallbackOrg || 'UrbanPulse',
         role: 'operator',
-        createdAt: serverTimestamp(),
-        lastLogin: serverTimestamp(),
+        emailVerified: firebaseUser.emailVerified,
         active: true
       };
-
-      await setDoc(userDocRef, newProfile);
-      setUserProfile(newProfile);
-      return newProfile;
+      setUserProfile(fallbackProfile);
+      return fallbackProfile;
     }
   };
 
@@ -131,12 +161,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
+  // Configure Auth Persistence (browserLocalPersistence or browserSessionPersistence)
+  const applyPersistence = async (staySignedIn: boolean = true) => {
+    try {
+      const persistenceMode = staySignedIn ? browserLocalPersistence : browserSessionPersistence;
+      await setPersistence(auth, persistenceMode);
+    } catch (err) {
+      console.warn('Could not set persistence mode:', err);
+    }
+  };
+
   // Email / Password Login
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string, staySignedIn: boolean = true): Promise<User> => {
     setLoading(true);
     try {
+      await applyPersistence(staySignedIn);
       const cred = await signInWithEmailAndPassword(auth, email.trim(), password);
+      setUser(cred.user);
       await syncUserProfile(cred.user);
+      return cred.user;
     } finally {
       setLoading(false);
     }
@@ -147,31 +190,83 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     email: string, 
     password: string, 
     fullName: string, 
-    organization: string = 'Gurugram Smart City Command'
-  ): Promise<void> => {
+    organization: string = 'UrbanPulse',
+    staySignedIn: boolean = true
+  ): Promise<User> => {
     setLoading(true);
     try {
+      await applyPersistence(staySignedIn);
       const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
+      
+      // Update displayName with user's Full Name
       if (fullName.trim()) {
         await updateProfile(cred.user, { displayName: fullName.trim() }).catch(() => {});
       }
+
+      // Send real email verification
+      await sendEmailVerification(cred.user).catch((e) => {
+        console.warn('Verification email dispatch warning:', e);
+      });
+
+      setUser(cred.user);
       await syncUserProfile(cred.user, fullName.trim(), organization.trim());
+      return cred.user;
     } finally {
       setLoading(false);
     }
   };
 
   // Google Sign-In
-  const signInWithGoogle = async (): Promise<void> => {
+  const signInWithGoogle = async (staySignedIn: boolean = true): Promise<User> => {
     setLoading(true);
     try {
+      await applyPersistence(staySignedIn);
       const provider = new GoogleAuthProvider();
       provider.setCustomParameters({ prompt: 'select_account' });
       const cred = await signInWithPopup(auth, provider);
+      setUser(cred.user);
       await syncUserProfile(cred.user);
+      return cred.user;
     } finally {
       setLoading(false);
     }
+  };
+
+  // Send / Resend Email Verification
+  const sendVerificationEmail = async (): Promise<void> => {
+    if (!auth.currentUser) {
+      throw new Error('No user is currently signed in to receive verification email.');
+    }
+    await sendEmailVerification(auth.currentUser);
+  };
+
+  // Check / Reload Email Verification Status
+  const checkEmailVerification = async (): Promise<boolean> => {
+    if (!auth.currentUser) return false;
+    await reload(auth.currentUser);
+    const refreshedUser = auth.currentUser;
+    setUser(refreshedUser);
+    
+    if (refreshedUser.emailVerified) {
+      const userDocRef = doc(db, 'users', refreshedUser.uid);
+      await updateDoc(userDocRef, {
+        emailVerified: true,
+        lastLogin: serverTimestamp()
+      }).catch(() => {});
+      
+      setUserProfile((prev) => prev ? { ...prev, emailVerified: true } : null);
+      return true;
+    }
+    return false;
+  };
+
+  // Reload Current User
+  const reloadUser = async (): Promise<User | null> => {
+    if (!auth.currentUser) return null;
+    await reload(auth.currentUser);
+    const refreshed = auth.currentUser;
+    setUser(refreshed);
+    return refreshed;
   };
 
   // Password Reset
@@ -191,12 +286,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const isEmailVerified = Boolean(user && user.emailVerified);
+
   const session = userProfile ? {
     user: {
       id: userProfile.uid,
       email: userProfile.email,
-      name: userProfile.fullName,
-      role: (userProfile.role as UserRole) || 'transport_authority',
+      name: userProfile.name || userProfile.fullName,
+      role: (userProfile.role as UserRole) || 'operator',
       organization: userProfile.organization
     }
   } : null;
@@ -208,11 +305,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userProfile,
         loading,
         isAuthenticated: Boolean(user),
+        isEmailVerified,
         login,
         signup,
         logout,
         resetPassword,
         signInWithGoogle,
+        sendVerificationEmail,
+        checkEmailVerification,
+        reloadUser,
         demoAccounts: DEMO_ACCOUNTS,
         session
       }}

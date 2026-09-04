@@ -3,6 +3,7 @@ export type NavigationTab =
   | 'login'
   | 'signup'
   | 'forgot_password'
+  | 'verify_email'
   | 'role_selection'
   | 'dashboard'
   | 'command_center'

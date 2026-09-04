@@ -12,7 +12,9 @@ import {
   AlertTriangle, 
   Loader2, 
   CheckCircle2, 
-  AlertCircle 
+  AlertCircle,
+  CheckSquare,
+  Square
 } from 'lucide-react';
 
 type AuthMode = 'LOGIN' | 'SIGNUP' | 'FORGOT_PASSWORD';
@@ -33,6 +35,7 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
   const [organization, setOrganization] = useState<string>('Gurugram Metropolitan Development Authority');
+  const [staySignedIn, setStaySignedIn] = useState<boolean>(true);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -44,14 +47,28 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
     else if (activeTab === 'login') setMode('LOGIN');
   }, [activeTab]);
 
+  const validateEmail = (emailStr: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(emailStr.trim());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
     setSuccessMessage(null);
 
+    // Validation for Signup
     if (mode === 'SIGNUP') {
       if (!fullName.trim()) {
-        setErrorMessage('Please enter your full name.');
+        setErrorMessage('Full Name is required.');
+        return;
+      }
+      if (!email.trim() || !validateEmail(email)) {
+        setErrorMessage('Please provide a valid email address (e.g. name@domain.com).');
+        return;
+      }
+      if (!password) {
+        setErrorMessage('Password is required.');
         return;
       }
       if (password.length < 6) {
@@ -59,7 +76,27 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
         return;
       }
       if (password !== confirmPassword) {
-        setErrorMessage('Passwords do not match. Please re-enter.');
+        setErrorMessage('Confirm Password does not match Password.');
+        return;
+      }
+    }
+
+    // Validation for Login
+    if (mode === 'LOGIN') {
+      if (!email.trim() || !validateEmail(email)) {
+        setErrorMessage('Please provide a valid email address.');
+        return;
+      }
+      if (!password) {
+        setErrorMessage('Please enter your password.');
+        return;
+      }
+    }
+
+    // Validation for Forgot Password
+    if (mode === 'FORGOT_PASSWORD') {
+      if (!email.trim() || !validateEmail(email)) {
+        setErrorMessage('Please enter a valid email address to receive password reset instructions.');
         return;
       }
     }
@@ -68,14 +105,26 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
 
     try {
       if (mode === 'LOGIN') {
-        await login(email, password);
-        setActiveTab('command_center');
+        const userCred = await login(email, password, staySignedIn);
+        // If email is not verified, redirect to email verification screen
+        if (!userCred.emailVerified) {
+          setActiveTab('verify_email');
+        } else {
+          setActiveTab('command_center');
+        }
       } else if (mode === 'SIGNUP') {
-        await signup(email, password, fullName.trim(), organization.trim() || 'UrbanPulse');
-        setActiveTab('command_center');
+        const userCred = await signup(
+          email, 
+          password, 
+          fullName.trim(), 
+          organization.trim() || 'UrbanPulse',
+          staySignedIn
+        );
+        // After signup with email verification sent, direct to verify_email screen
+        setActiveTab('verify_email');
       } else if (mode === 'FORGOT_PASSWORD') {
         await resetPassword(email);
-        setSuccessMessage('Password reset link sent to your email. Please check your inbox.');
+        setSuccessMessage('Password reset link sent to your email. Please check your inbox and spam folder.');
       }
     } catch (err: any) {
       console.error('Firebase Auth Error:', err);
@@ -83,11 +132,15 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
       if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
         message = 'Invalid email or password. Please verify your credentials or use Google Sign-In.';
       } else if (err.code === 'auth/email-already-in-use') {
-        message = 'An account with this email already exists. Please Sign In instead.';
+        message = 'An account with this email address already exists. Please Sign In instead.';
       } else if (err.code === 'auth/weak-password') {
-        message = 'Password is too weak. Please use at least 6 characters.';
+        message = 'Password is too weak. Please use at least 6 characters with a mix of letters and numbers.';
       } else if (err.code === 'auth/invalid-email') {
-        message = 'Please provide a valid email address.';
+        message = 'Invalid email address format.';
+      } else if (err.code === 'auth/too-many-requests') {
+        message = 'Access temporarily disabled due to many failed attempts. Try again later or reset password.';
+      } else if (err.code === 'auth/network-request-failed') {
+        message = 'Network connection issue. Please check your internet connection.';
       } else if (err.message) {
         message = err.message;
       }
@@ -103,11 +156,11 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
     setIsLoading(true);
 
     try {
-      await signInWithGoogle();
+      await signInWithGoogle(staySignedIn);
       setActiveTab('command_center');
     } catch (err: any) {
       console.error('Google Sign-In Error:', err);
-      if (err.code !== 'auth/popup-closed-by-user') {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
         setErrorMessage(err.message || 'Google Sign-In was unable to complete. Please try again.');
       }
     } finally {
@@ -169,7 +222,7 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
           {/* Animated Route & Sensing Visual Box */}
           <div className="p-5 bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl shadow-lg space-y-3 relative overflow-hidden">
             <div className="flex items-center justify-between text-xs font-mono border-b border-[#E2E8F0] pb-2">
-              <span className="font-bold text-[#2563EB]">LIVE FIRESTORE CLUSTER</span>
+              <span className="font-bold text-[#2563EB]">LIVE FIREBASE AUTH & FIRESTORE</span>
               <span className="text-[#059669]">● REALTIME BACKEND ONLINE</span>
             </div>
 
@@ -225,7 +278,7 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
               </div>
 
               <p className="text-xs text-[#64748B] pt-1">
-                {mode === 'LOGIN' && 'Access the UrbanPulse Command Center'}
+                {mode === 'LOGIN' && 'Sign in to access the UrbanPulse Command Center'}
                 {mode === 'SIGNUP' && 'Create your official UrbanPulse operator account'}
                 {mode === 'FORGOT_PASSWORD' && 'Reset your UrbanPulse account password'}
               </p>
@@ -274,7 +327,7 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
                     <Building2 className="w-3.5 h-3.5 text-[#8290A3] absolute left-3 top-3" />
                     <input
                       type="text"
-                      placeholder="e.g. UrbanPulse"
+                      placeholder="e.g. UrbanPulse / GMDA"
                       value={organization}
                       onChange={(e) => setOrganization(e.target.value)}
                       className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-md pl-9 pr-3 py-2 text-[#172033] focus:outline-none focus:border-[#2563EB]"
@@ -344,6 +397,21 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
                       required
                     />
                   </div>
+                </div>
+              )}
+
+              {/* Stay Signed In Checkbox */}
+              {mode !== 'FORGOT_PASSWORD' && (
+                <div className="flex items-center space-x-2 pt-1">
+                  <label className="flex items-center space-x-2 cursor-pointer select-none text-xs text-[#526174]">
+                    <input
+                      type="checkbox"
+                      checked={staySignedIn}
+                      onChange={(e) => setStaySignedIn(e.target.checked)}
+                      className="w-4 h-4 text-[#2563EB] rounded border-[#CBD5E1] focus:ring-[#2563EB] accent-[#2563EB]"
+                    />
+                    <span>Stay signed in on this device</span>
+                  </label>
                 </div>
               )}
 
@@ -422,7 +490,7 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
                 <span>Continue with Google</span>
               </button>
 
-              {/* Pre-configured Demo Accounts */}
+              {/* Pre-configured Demo Credentials */}
               <div className="pt-2">
                 <span className="text-[10px] font-mono text-[#8290A3] uppercase font-bold block mb-1.5">
                   PRE-CONFIGURED DEMO CREDENTIALS

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/urbanpulse';
-import { Play, Pause, Clock, Sparkles, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
+import { Play, Pause, Clock, Sparkles, Menu, X, LogOut, User as UserIcon, AlertTriangle } from 'lucide-react';
 import { DemoGuideModal } from './DemoGuideModal';
 import { Logo } from '../common/Logo';
 
@@ -98,6 +98,15 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
               <option value="operator">Operator</option>
             </select>
           </div>
+
+          {/* Public Citizen Report Trigger */}
+          <button
+            onClick={() => setActiveTab('citizen_report')}
+            className="px-2.5 sm:px-3 py-1.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#059669] text-xs font-semibold rounded-md border border-[#A7F3D0] transition flex items-center space-x-1"
+          >
+            <AlertTriangle className="w-3.5 h-3.5 text-[#059669]" />
+            <span className="hidden sm:inline">+ Report Issue</span>
+          </button>
 
           {/* Guide Modal Trigger */}
           <button

@@ -25,6 +25,10 @@ import { ReportsView } from '../reports/ReportsView';
 import { AIArchitectureView } from '../architecture/AIArchitectureView';
 import { SettingsView } from '../system/SettingsView';
 import { UserProfileView } from '../profile/UserProfileView';
+import { CitizenReportView } from '../citizen/CitizenReportView';
+import { MyReportsView } from '../citizen/MyReportsView';
+import { ThreeDGlobeView } from '../globe/ThreeDGlobeView';
+import { DashcamIntelligenceView } from '../dashcam/DashcamIntelligenceView';
 import { Logo } from '../common/Logo';
 import { Loader2 } from 'lucide-react';
 
@@ -139,6 +143,14 @@ export const AppShell: React.FC = () => {
       case 'privacy':
       case 'settings':
         return <SettingsView />;
+      case 'citizen_report':
+        return <CitizenReportView />;
+      case 'my_reports':
+        return <MyReportsView />;
+      case 'globe':
+        return <ThreeDGlobeView />;
+      case 'dashcam':
+        return <DashcamIntelligenceView />;
       default:
         return <CommandCenter />;
     }

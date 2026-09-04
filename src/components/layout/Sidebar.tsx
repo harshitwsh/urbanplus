@@ -21,7 +21,9 @@ import {
   X,
   Building2,
   User as UserIcon,
-  Shield
+  Shield,
+  Globe,
+  AlertTriangle
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 
@@ -43,16 +45,25 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
       items: [
         { id: 'command_center', label: 'Command Center', icon: LayoutDashboard },
         { id: 'map', label: 'Live City Map', icon: Map },
+        { id: 'globe', label: '3D Intelligence Globe', icon: Globe },
       ]
     },
     {
       title: 'INTELLIGENCE',
       items: [
         { id: 'events', label: 'AI Events', icon: Eye },
+        { id: 'dashcam', label: 'Dashcam AI Feed', icon: Cpu },
         { id: 'fusion', label: 'Evidence Fusion', icon: Layers },
         { id: 'road', label: 'Road Intelligence', icon: Activity },
         { id: 'traffic', label: 'Traffic Intelligence', icon: TrendingUp },
         { id: 'incidents', label: 'Incident Center', icon: ShieldAlert },
+      ]
+    },
+    {
+      title: 'PUBLIC & CITIZENS',
+      items: [
+        { id: 'citizen_report', label: 'Report an Issue', icon: AlertTriangle },
+        { id: 'my_reports', label: 'My Submitted Reports', icon: FileText },
       ]
     },
     {

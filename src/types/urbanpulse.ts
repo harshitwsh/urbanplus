@@ -8,9 +8,11 @@ export type NavigationTab =
   | 'dashboard'
   | 'command_center'
   | 'map'
+  | 'globe'
   | 'events'
   | 'fusion'
   | 'vision'
+  | 'dashcam'
   | 'road'
   | 'traffic'
   | 'hotspots'
@@ -18,6 +20,8 @@ export type NavigationTab =
   | 'incidents'
   | 'actions'
   | 'field_officer'
+  | 'citizen_report'
+  | 'my_reports'
   | 'analytics'
   | 'reports'
   | 'privacy'
@@ -30,12 +34,13 @@ export type UserRole =
   | 'municipal_authority'
   | 'field_officer'
   | 'administrator'
-  | 'operator';
+  | 'operator'
+  | 'citizen';
 
 export type EventSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED';
+export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED' | 'Reported' | 'Under Review' | 'In Progress' | 'Resolved';
 export type IncidentStatus = 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'DISMISSED' | 'ESCALATED' | 'AWAITING_VERIFICATION' | 'REJECTED';
-export type DefectType = 'pothole' | 'waterlogging' | 'road_damage' | 'missing_divider' | 'missing_zebra' | 'damaged_sign' | 'infrastructure' | 'pedestrian_risk';
+export type DefectType = 'pothole' | 'waterlogging' | 'road_damage' | 'missing_divider' | 'missing_zebra' | 'damaged_sign' | 'infrastructure' | 'pedestrian_risk' | 'accident' | 'broken_streetlight' | 'garbage' | 'traffic_hazard' | 'other';
 
 export interface CameraHealth {
   front: boolean;
@@ -111,6 +116,28 @@ export interface RoadDefect {
   imageUrl: string;
   assignedDept: string;
   slaHours: number;
+  source?: 'citizen' | 'dashcam' | 'ai_detection' | 'government' | 'surveillance';
+}
+
+export interface CitizenReport {
+  id: string; // UP-2026-XXXXX
+  type: DefectType;
+  title: string;
+  description?: string;
+  images: string[];
+  lat: number;
+  lng: number;
+  locationName: string;
+  severity: EventSeverity;
+  status: 'Reported' | 'Under Review' | 'Verified' | 'Assigned' | 'In Progress' | 'Resolved';
+  source: 'citizen' | 'dashcam' | 'ai_detection' | 'government' | 'surveillance';
+  reporterId?: string;
+  reporterEmail?: string;
+  createdAt: string;
+  updatedAt: string;
+  assignedDepartment?: string;
+  verified: boolean;
+  isDemo?: boolean;
 }
 
 export interface TrafficHotspot {
@@ -173,7 +200,7 @@ export interface AlertNotification {
   id: string;
   title: string;
   description: string;
-  type: 'CRITICAL_HAZARD' | 'FLEET_ALERT' | 'TRAFFIC_ALERT' | 'INCIDENT_ALERT';
+  type: 'CRITICAL_HAZARD' | 'FLEET_ALERT' | 'TRAFFIC_ALERT' | 'INCIDENT_ALERT' | 'CITIZEN_REPORT';
   severity: EventSeverity;
   timestamp: string;
   location: string;

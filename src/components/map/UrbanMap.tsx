@@ -21,7 +21,10 @@ import {
   ArrowRight,
   ShieldAlert,
   Compass,
-  CheckCircle2
+  CheckCircle2,
+  Plus,
+  Minus,
+  Maximize2
 } from 'lucide-react';
 
 interface UserLocation {
@@ -104,6 +107,7 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
   // Map States
   const [mapMode, setMapMode] = useState<MapViewMode>('STANDARD');
   const [activeInspectorDefect, setActiveInspectorDefect] = useState<RoadDefect | null>(selectedDefect || roadDefects[0]);
+  const [currentZoomLevel, setCurrentZoomLevel] = useState<number>(14);
   
   // Real GPS Geolocation States
   const [userLocation, setUserLocation] = useState<UserLocation | null>(() => {
@@ -387,7 +391,6 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    // Check if query matches local landmark
     const localMatch = GURUGRAM_SEARCH_LOCATIONS.find(loc =>
       loc.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
@@ -438,17 +441,17 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Map Initialization (60 FPS Smooth Canvas Renderer)
+  // Map Initialization (Full Globe Zoom Enabled: minZoom set to 2)
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     const initCenter: [number, number] = userLocation ? [userLocation.lat, userLocation.lng] : [28.4595, 77.0266];
     
-    // Initialize Leaflet Map with Canvas Acceleration
+    // Initialize Leaflet Map with minZoom: 2 to allow zooming out completely to the full world globe!
     const map = L.map(mapContainerRef.current, {
       center: initCenter,
       zoom: userLocation ? 16.5 : 14,
-      minZoom: 10,
+      minZoom: 2, // Full Globe zoom level allowed!
       maxZoom: 19,
       zoomControl: false,
       attributionControl: false,
@@ -456,9 +459,9 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     });
 
     const baseTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      minZoom: 10,
+      minZoom: 2,
       maxZoom: 19,
-      noWrap: true,
+      noWrap: false, // Allows seamless world wrap when zooming out to globe level
       keepBuffer: 3,
       updateWhenIdle: false,
       updateWhenZooming: false
@@ -466,6 +469,15 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
 
     tileLayerRef.current = baseTile;
     mapInstanceRef.current = map;
+
+    // Track Zoom Level & Auto-Prompt for 3D Globe when zoomed out to world level
+    map.on('zoomend', () => {
+      const z = map.getZoom();
+      setCurrentZoomLevel(z);
+      if (z <= 3) {
+        showToast('🌐 Zoomed out to Full World Globe map level. Click "3D Globe Map" for 3D WebGL Spatial view.');
+      }
+    });
 
     // Render Road Coverage Network
     GURUGRAM_ROAD_COVERAGE_NETWORK.forEach((road) => {
@@ -502,7 +514,6 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
       }
     });
 
-    // Recalculate container bounds immediately
     setTimeout(() => {
       if (mapInstanceRef.current) mapInstanceRef.current.invalidateSize();
     }, 100);
@@ -512,7 +523,6 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     };
     window.addEventListener('resize', handleResize);
 
-    // Initial GPS query
     startLiveLocationTracking(true);
 
     return () => {
@@ -525,7 +535,7 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     };
   }, [startLiveLocationTracking, updateUserGPSVisuals, showToast]);
 
-  // Tile Mode Switcher
+  // Tile Mode Switcher (Full Globe minZoom: 2)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -538,48 +548,47 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
 
     if (mapMode === 'SATELLITE') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        minZoom: 10,
+        minZoom: 2,
         maxZoom: 19,
-        noWrap: true
+        noWrap: false
       }).addTo(map);
     } else if (mapMode === 'HYBRID') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        minZoom: 10,
+        minZoom: 2,
         maxZoom: 19,
-        noWrap: true
+        noWrap: false
       }).addTo(map);
 
       overlayTileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
-        minZoom: 10,
+        minZoom: 2,
         maxZoom: 19,
-        noWrap: true,
+        noWrap: false,
         pane: 'markerPane'
       }).addTo(map);
     } else if (mapMode === 'URBAN_INTELLIGENCE') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-        minZoom: 10,
+        minZoom: 2,
         maxZoom: 19,
-        noWrap: true
+        noWrap: false
       }).addTo(map);
     } else {
       tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        minZoom: 10,
+        minZoom: 2,
         maxZoom: 19,
-        noWrap: true
+        noWrap: false
       }).addTo(map);
     }
     
     map.invalidateSize();
   }, [mapMode]);
 
-  // IMPERATIVE MARKER UPDATES (60 FPS Smooth - No DOM Teardown Lag)
+  // IMPERATIVE MARKER UPDATES (60 FPS Smooth)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map || !layers.buses) return;
 
     const activeBusIds = new Set(buses.map(b => b.id));
 
-    // Remove deleted markers
     busMarkersRef.current.forEach((marker, id) => {
       if (!activeBusIds.has(id)) {
         marker.remove();
@@ -587,12 +596,10 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
       }
     });
 
-    // Update or create bus markers smoothly
     buses.forEach((bus) => {
       const latLng: [number, number] = [bus.lat, bus.lng];
 
       if (busMarkersRef.current.has(bus.id)) {
-        // Imperative position update
         const marker = busMarkersRef.current.get(bus.id)!;
         marker.setLatLng(latLng);
         marker.setTooltipContent(`<b>${bus.id}</b> • ${bus.speed || 0} km/h • Live Dashcam`);
@@ -602,7 +609,6 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
           iconEl.style.transform = `rotate(${bus.heading}deg)`;
         }
       } else {
-        // Create marker ONCE
         const busIcon = L.divIcon({
           className: 'custom-bus-marker',
           html: `
@@ -661,6 +667,21 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
     });
   }, [roadDefects, selectedDefect, layers.defects, setSelectedDefect]);
 
+  // Zoom Action Controls
+  const handleZoomIn = () => {
+    if (mapInstanceRef.current) mapInstanceRef.current.zoomIn();
+  };
+
+  const handleZoomOut = () => {
+    if (mapInstanceRef.current) mapInstanceRef.current.zoomOut();
+  };
+
+  const handleFullGlobeZoom = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([20, 0], 2, { animate: true, duration: 1.5 });
+    }
+  };
+
   return (
     <div className="flex flex-col h-full relative overflow-hidden bg-[#F7F8FA] select-none font-sans">
       {/* Toast Notification */}
@@ -673,7 +694,7 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
 
       {/* Top Google Maps Style Header Toolbar */}
       <div className="p-2.5 bg-[#FFFFFF] border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2 z-20 text-xs shadow-xs">
-        {/* Left: Google Maps Style Search Bar with Autocomplete Dropdown */}
+        {/* Left: Google Maps Style Search Bar */}
         <div ref={searchContainerRef} className="relative flex-1 min-w-[280px] max-w-md">
           <form onSubmit={handleSearchSubmit} className="relative flex items-center">
             <Search className="w-4 h-4 text-[#64748B] absolute left-3 pointer-events-none" />
@@ -711,7 +732,7 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
             </button>
           </form>
 
-          {/* Autocomplete Dropdown Panel (Google Maps Style) */}
+          {/* Autocomplete Dropdown Panel */}
           {showSuggestions && suggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg shadow-2xl z-50 overflow-hidden font-sans max-h-72 overflow-y-auto">
               <div className="px-3 py-1.5 bg-[#F8FAFC] border-b border-[#E2E8F0] text-[10px] font-mono text-[#64748B] font-bold uppercase tracking-wider flex items-center justify-between">
@@ -823,6 +844,47 @@ export const UrbanMap: React.FC<UrbanMapProps> = ({ onToggle3DGlobe, is3DGlobeAc
       {/* Main Map Canvas Viewport */}
       <div className="flex-1 relative w-full h-full">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+        {/* Floating Controlled Zoom Buttons Stack (Right Side) */}
+        <div className="absolute right-4 top-4 z-20 flex flex-col space-y-1.5 font-mono">
+          <button
+            onClick={handleZoomIn}
+            className="w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-lg shadow-lg flex items-center justify-center font-bold transition hover:border-[#2563EB]"
+            title="Zoom In (+)"
+          >
+            <Plus className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleZoomOut}
+            className="w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-lg shadow-lg flex items-center justify-center font-bold transition hover:border-[#2563EB]"
+            title="Zoom Out (−)"
+          >
+            <Minus className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleFullGlobeZoom}
+            className="w-8 h-8 bg-[#0F172A] hover:bg-[#1E293B] text-[#38BDF8] border border-[#38BDF8] rounded-lg shadow-xl flex items-center justify-center font-bold transition"
+            title="Zoom Out to Full World Globe View"
+          >
+            <Globe className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={() => {
+              if (mapInstanceRef.current) {
+                const targetLat = userLocation ? userLocation.lat : 28.4595;
+                const targetLng = userLocation ? userLocation.lng : 77.0266;
+                mapInstanceRef.current.flyTo([targetLat, targetLng], 16);
+              }
+            }}
+            className="w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#2563EB] border border-[#CBD5E1] rounded-lg shadow-lg flex items-center justify-center font-bold transition"
+            title="Re-Center City / My Location"
+          >
+            <Crosshair className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Floating Pinning Mode Notification */}
         {isPinningMode && (

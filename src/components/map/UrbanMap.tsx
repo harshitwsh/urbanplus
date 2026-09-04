@@ -1,18 +1,48 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useApp } from '../../context/AppContext';
 import { RoadDefect, Bus, Incident, ActionItem } from '../../types/urbanpulse';
 import { EventInspector } from './EventInspector';
 import { GURUGRAM_ROUTES } from '../../services/FleetSimulationEngine';
-import { MapPin, Navigation, Layers, Search, Crosshair, Compass, Eye, ShieldCheck, AlertTriangle, ShieldAlert, CheckSquare } from 'lucide-react';
+import { 
+  MapPin, 
+  Navigation, 
+  Layers, 
+  Search, 
+  Crosshair, 
+  Compass, 
+  Eye, 
+  ShieldCheck, 
+  AlertTriangle, 
+  ShieldAlert, 
+  CheckSquare, 
+  Radio, 
+  Activity, 
+  Satellite, 
+  Share2, 
+  Lock, 
+  Info,
+  Loader2,
+  X
+} from 'lucide-react';
 
 interface UserLocation {
   lat: number;
   lng: number;
   accuracy: number;
+  altitude?: number | null;
+  speed?: number | null;
+  heading?: number | null;
   timestamp: string;
 }
+
+type LocationStatus = 
+  | 'GPS Connected' 
+  | 'Requesting Location' 
+  | 'Location Permission Denied' 
+  | 'Location Unavailable' 
+  | 'Idle';
 
 export const UrbanMap: React.FC = () => {
   const {
@@ -33,11 +63,24 @@ export const UrbanMap: React.FC = () => {
   const markersRef = useRef<Map<string, L.Marker>>(new Map());
   const polylinesRef = useRef<L.Polyline[]>([]);
 
+  // User GPS Tracking Refs
+  const userMarkerRef = useRef<L.Marker | null>(null);
+  const userCircleRef = useRef<L.Circle | null>(null);
+  const watchIdRef = useRef<number | null>(null);
+  const hasCenteredInitialLocationRef = useRef<boolean>(false);
+
   const [mapMode, setMapMode] = useState<'CITY' | 'SATELLITE' | 'AI_INTELLIGENCE'>('CITY');
   const [activeInspectorDefect, setActiveInspectorDefect] = useState<RoadDefect | null>(selectedDefect || roadDefects[0]);
+  
+  // Real GPS Geolocation States
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [locationStatus, setLocationStatus] = useState<LocationStatus>('Idle');
   const [locationToast, setLocationToast] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
+  const [shareLiveLocation, setShareLiveLocation] = useState<boolean>(false);
+  const [showLocationPanel, setShowLocationPanel] = useState<boolean>(true);
+
+  // Search Geocoding States
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResult, setSearchResult] = useState<string | null>(null);
 
@@ -48,13 +91,206 @@ export const UrbanMap: React.FC = () => {
     defects: true,
     incidents: true,
     workOrders: true,
+    gpsAccuracy: true
   });
 
-  // Initialize Real Leaflet GIS Engine
+  // Helper to show dismissible toast
+  const showToast = useCallback((msg: string, duration = 4000) => {
+    setLocationToast(msg);
+    setTimeout(() => {
+      setLocationToast((prev) => (prev === msg ? null : prev));
+    }, duration);
+  }, []);
+
+  // Update or create the animated user location marker and accuracy circle
+  const updateUserGPSVisuals = useCallback((loc: UserLocation) => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    const latLng: [number, number] = [loc.lat, loc.lng];
+
+    // 1. Create or update accuracy circle
+    if (layers.gpsAccuracy && loc.accuracy > 0) {
+      if (userCircleRef.current) {
+        userCircleRef.current.setLatLng(latLng);
+        userCircleRef.current.setRadius(loc.accuracy);
+      } else {
+        userCircleRef.current = L.circle(latLng, {
+          radius: loc.accuracy,
+          color: '#2563EB',
+          fillColor: '#3B82F6',
+          fillOpacity: 0.12,
+          weight: 1.5,
+          dashArray: '4, 4'
+        }).addTo(map);
+      }
+    } else if (userCircleRef.current) {
+      userCircleRef.current.remove();
+      userCircleRef.current = null;
+    }
+
+    // 2. Create or update animated custom user marker
+    const userHtml = `
+      <div class="relative flex items-center justify-center" style="width:36px; height:36px;">
+        <div class="gps-radar-wave-1"></div>
+        <div class="gps-radar-wave-2"></div>
+        <div class="relative z-10 w-4 h-4 rounded-full bg-[#2563EB] border-[3px] border-white shadow-[0_0_12px_rgba(37,99,235,0.8)] flex items-center justify-center">
+          <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
+        </div>
+      </div>
+    `;
+
+    const userIcon = L.divIcon({
+      className: 'custom-gps-user-marker',
+      html: userHtml,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18]
+    });
+
+    if (userMarkerRef.current) {
+      userMarkerRef.current.setLatLng(latLng);
+      userMarkerRef.current.setIcon(userIcon);
+    } else {
+      userMarkerRef.current = L.marker(latLng, { 
+        icon: userIcon, 
+        zIndexOffset: 1000 
+      }).addTo(map);
+
+      userMarkerRef.current.bindTooltip(
+        `<b>You are here (Real GPS)</b><br/>Lat: ${loc.lat.toFixed(5)}<br/>Lng: ${loc.lng.toFixed(5)}<br/>Accuracy: ±${loc.accuracy}m`,
+        { permanent: false, direction: 'top', offset: [0, -10] }
+      );
+    }
+  }, [layers.gpsAccuracy]);
+
+  // Success handler for browser GPS coordinates
+  const handleGeoSuccess = useCallback((position: GeolocationPosition, autoCenter = false) => {
+    const coords = position.coords;
+    const loc: UserLocation = {
+      lat: coords.latitude,
+      lng: coords.longitude,
+      accuracy: Math.round(coords.accuracy),
+      altitude: coords.altitude,
+      speed: coords.speed ? Math.round(coords.speed * 3.6) : null, // km/h
+      heading: coords.heading,
+      timestamp: new Date(position.timestamp).toLocaleTimeString('en-IN')
+    };
+
+    setUserLocation(loc);
+    setLocationStatus('GPS Connected');
+    setIsLocating(false);
+
+    // Update map visualization
+    updateUserGPSVisuals(loc);
+
+    // Smoothly fly to user location on initial lock or explicit user request
+    if (autoCenter || !hasCenteredInitialLocationRef.current) {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16, {
+          animate: true,
+          duration: 1.5
+        });
+      }
+      hasCenteredInitialLocationRef.current = true;
+    }
+  }, [updateUserGPSVisuals]);
+
+  // Error handler for browser GPS
+  const handleGeoError = useCallback((error: GeolocationPositionError) => {
+    setIsLocating(false);
+
+    switch (error.code) {
+      case error.PERMISSION_DENIED:
+        setLocationStatus('Location Permission Denied');
+        showToast('Location permission is required to show your current position.');
+        break;
+      case error.POSITION_UNAVAILABLE:
+        setLocationStatus('Location Unavailable');
+        showToast('GPS position unavailable. Please check your device location services.');
+        break;
+      case error.TIMEOUT:
+        setLocationStatus('Location Unavailable');
+        showToast('GPS request timed out. Retrying high-accuracy signal...');
+        break;
+      default:
+        setLocationStatus('Location Unavailable');
+        showToast('An unexpected error occurred while acquiring GPS.');
+    }
+  }, [showToast]);
+
+  // Initialize and start live continuous GPS tracking
+  const startLiveLocationTracking = useCallback((flyToUser = false) => {
+    if (!('geolocation' in navigator)) {
+      setLocationStatus('Location Unavailable');
+      showToast('Browser does not support geolocation.');
+      return;
+    }
+
+    setIsLocating(true);
+    setLocationStatus('Requesting Location');
+
+    const geoOptions: PositionOptions = {
+      enableHighAccuracy: true,
+      timeout: 10000,
+      maximumAge: 0
+    };
+
+    // 1. First immediate position lock
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        handleGeoSuccess(pos, flyToUser);
+        showToast(`GPS Connected: Real location acquired (±${Math.round(pos.coords.accuracy)}m)`);
+      },
+      (err) => {
+        handleGeoError(err);
+      },
+      geoOptions
+    );
+
+    // 2. Clear any previous continuous watcher before setting up a new one
+    if (watchIdRef.current !== null) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+
+    // 3. Continuous live location tracking (watchPosition)
+    const watchId = navigator.geolocation.watchPosition(
+      (pos) => {
+        handleGeoSuccess(pos, false);
+      },
+      (err) => {
+        // Silently handle transient watch errors unless critical
+        if (err.code === err.PERMISSION_DENIED) {
+          setLocationStatus('Location Permission Denied');
+        }
+      },
+      geoOptions
+    );
+
+    watchIdRef.current = watchId;
+  }, [handleGeoSuccess, handleGeoError, showToast]);
+
+  // Stop location tracking
+  const stopLiveLocationTracking = useCallback(() => {
+    if (watchIdRef.current !== null && 'geolocation' in navigator) {
+      navigator.geolocation.clearWatch(watchIdRef.current);
+      watchIdRef.current = null;
+    }
+    if (userMarkerRef.current) {
+      userMarkerRef.current.remove();
+      userMarkerRef.current = null;
+    }
+    if (userCircleRef.current) {
+      userCircleRef.current.remove();
+      userCircleRef.current = null;
+    }
+  }, []);
+
+  // Initialize Real Leaflet GIS Engine & Permissions Check on Mount
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Create real interactive map instance over Gurugram, India
+    // Create real interactive map instance
     const map = L.map(mapContainerRef.current, {
       center: [28.4595, 77.0266],
       zoom: 14,
@@ -83,11 +319,42 @@ export const UrbanMap: React.FC = () => {
       polylinesRef.current.push(poly);
     });
 
+    // Check Permissions API if supported
+    if (navigator.permissions && navigator.permissions.query) {
+      navigator.permissions.query({ name: 'geolocation' as PermissionName })
+        .then((perm) => {
+          if (perm.state === 'granted') {
+            startLiveLocationTracking(true);
+          } else if (perm.state === 'prompt') {
+            setLocationStatus('Requesting Location');
+            startLiveLocationTracking(true);
+          } else if (perm.state === 'denied') {
+            setLocationStatus('Location Permission Denied');
+          }
+
+          perm.onchange = () => {
+            if (perm.state === 'granted') {
+              startLiveLocationTracking(true);
+            } else if (perm.state === 'denied') {
+              setLocationStatus('Location Permission Denied');
+              stopLiveLocationTracking();
+            }
+          };
+        })
+        .catch(() => {
+          // Fallback if query throws in certain browsers
+          startLiveLocationTracking(true);
+        });
+    } else {
+      startLiveLocationTracking(true);
+    }
+
     return () => {
+      stopLiveLocationTracking();
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, []);
+  }, [startLiveLocationTracking, stopLiveLocationTracking]);
 
   // Update Tile Layer when Map Mode changes
   useEffect(() => {
@@ -107,12 +374,19 @@ export const UrbanMap: React.FC = () => {
     }
   }, [mapMode]);
 
+  // Re-sync user marker visuals if userLocation changes
+  useEffect(() => {
+    if (userLocation) {
+      updateUserGPSVisuals(userLocation);
+    }
+  }, [userLocation, updateUserGPSVisuals]);
+
   // Update Dynamic Markers (Buses, Defects/Events, Incidents, Work Orders) from Firestore Real-Time
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
-    // Clear old markers
+    // Clear old data markers
     markersRef.current.forEach((marker) => marker.remove());
     markersRef.current.clear();
 
@@ -226,53 +500,18 @@ export const UrbanMap: React.FC = () => {
       });
     }
 
-  }, [buses, roadDefects, incidents, actionItems, selectedDefect, layers]);
+  }, [buses, roadDefects, incidents, actionItems, selectedDefect, layers, setActiveTab, setSelectedBus, setSelectedDefect]);
 
-  // Real Browser Geolocation ("Locate Me")
-  const handleLocateMe = () => {
-    setIsLocating(true);
-    setLocationToast('Requesting browser geolocation permission...');
-
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const loc: UserLocation = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            accuracy: Math.round(position.coords.accuracy),
-            timestamp: new Date().toLocaleTimeString('en-IN')
-          };
-          setUserLocation(loc);
-          setIsLocating(false);
-          setLocationToast(`Current location acquired (±${loc.accuracy}m)`);
-
-          if (mapInstanceRef.current) {
-            mapInstanceRef.current.flyTo([loc.lat, loc.lng], 16);
-
-            // Add user location marker
-            const userIcon = L.divIcon({
-              className: 'custom-user-marker',
-              html: `
-                <div style="background-color:#2563EB; border:3px solid white; width:22px; height:22px; border-radius:50%; box-shadow:0 0 12px rgba(37,99,235,0.6);"></div>
-              `,
-              iconSize: [22, 22],
-              iconAnchor: [11, 11]
-            });
-            L.marker([loc.lat, loc.lng], { icon: userIcon }).addTo(mapInstanceRef.current);
-          }
-
-          setTimeout(() => setLocationToast(null), 4000);
-        },
-        (error) => {
-          setIsLocating(false);
-          setLocationToast('Location permission was not granted.');
-          setTimeout(() => setLocationToast(null), 4000);
-        },
-        { enableHighAccuracy: true, timeout: 10000 }
-      );
+  // "Locate Me" Button Click Handler
+  const handleLocateMeClick = () => {
+    if (userLocation && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 16, {
+        animate: true,
+        duration: 1.2
+      });
+      showToast(`Centered on your GPS location (±${userLocation.accuracy}m)`);
     } else {
-      setIsLocating(false);
-      setLocationToast('Geolocation is not supported by your browser.');
+      startLiveLocationTracking(true);
     }
   };
 
@@ -292,7 +531,7 @@ export const UrbanMap: React.FC = () => {
       setSearchResult('IFFCO Chowk Metro (28.4720, 77.0725)');
     } else {
       mapInstanceRef.current.flyTo([28.4595, 77.0266], 15);
-      setSearchResult(`Geocoded: ${searchQuery} (Gurugram Demo Center)`);
+      setSearchResult(`Geocoded: ${searchQuery} (Gurugram Corridor)`);
     }
   };
 
@@ -303,13 +542,37 @@ export const UrbanMap: React.FC = () => {
         <div className="flex items-center space-x-3">
           <div>
             <span className="font-bold text-[#172033]">Realtime Geospatial GIS Engine</span>
-            <span className="text-[11px] text-[#64748B] ml-2 hidden sm:inline">Connected to Firestore /buses /events /incidents /workOrders</span>
+            <span className="text-[11px] text-[#64748B] ml-2 hidden sm:inline">Live Browser GPS & Firestore Stream</span>
           </div>
 
-          <div className="px-2 py-0.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded text-[10px] font-mono text-[#059669] font-bold flex items-center space-x-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#059669] animate-pulse" />
-            <span>REALTIME FIRESTORE GIS</span>
-          </div>
+          {/* Location Status Badge */}
+          {locationStatus === 'GPS Connected' && (
+            <div className="px-2 py-0.5 bg-[#ECFDF5] border border-[#A7F3D0] rounded text-[10px] font-mono text-[#059669] font-bold flex items-center space-x-1.5 shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse" />
+              <span>GPS CONNECTED</span>
+            </div>
+          )}
+
+          {locationStatus === 'Requesting Location' && (
+            <div className="px-2 py-0.5 bg-[#FEF3C7] border border-[#FDE68A] rounded text-[10px] font-mono text-[#D97706] font-bold flex items-center space-x-1.5 shadow-sm">
+              <Loader2 className="w-3 h-3 animate-spin text-[#D97706]" />
+              <span>REQUESTING LOCATION</span>
+            </div>
+          )}
+
+          {locationStatus === 'Location Permission Denied' && (
+            <div className="px-2 py-0.5 bg-[#FEF2F2] border border-[#FECACA] rounded text-[10px] font-mono text-[#DC2626] font-bold flex items-center space-x-1.5 shadow-sm">
+              <ShieldAlert className="w-3 h-3 text-[#DC2626]" />
+              <span>LOCATION PERMISSION DENIED</span>
+            </div>
+          )}
+
+          {locationStatus === 'Location Unavailable' && (
+            <div className="px-2 py-0.5 bg-[#F1F5F9] border border-[#CBD5E1] rounded text-[10px] font-mono text-[#64748B] font-bold flex items-center space-x-1.5 shadow-sm">
+              <AlertTriangle className="w-3 h-3 text-[#64748B]" />
+              <span>LOCATION UNAVAILABLE</span>
+            </div>
+          )}
         </div>
 
         {/* Map Mode Switches & Layers */}
@@ -341,7 +604,7 @@ export const UrbanMap: React.FC = () => {
             {showLayerMenu && (
               <div className="absolute right-0 top-8 bg-[#FFFFFF] border border-[#E2E8F0] rounded-lg shadow-xl p-3 w-56 z-30 space-y-2 font-mono text-xs text-[#526174]">
                 <span className="text-[10px] font-bold text-[#8290A3] uppercase block border-b border-[#E2E8F0] pb-1">
-                  FIRESTORE COLLECTIONS
+                  MAP LAYERS
                 </span>
                 <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
                   <input
@@ -379,6 +642,15 @@ export const UrbanMap: React.FC = () => {
                   />
                   <span>/workOrders ({actionItems.length})</span>
                 </label>
+                <label className="flex items-center space-x-2 cursor-pointer font-sans text-xs text-[#172033]">
+                  <input
+                    type="checkbox"
+                    checked={layers.gpsAccuracy}
+                    onChange={(e) => setLayers({ ...layers, gpsAccuracy: e.target.checked })}
+                    className="accent-[#2563EB]"
+                  />
+                  <span>GPS Accuracy Ring</span>
+                </label>
               </div>
             )}
           </div>
@@ -411,10 +683,11 @@ export const UrbanMap: React.FC = () => {
           )}
         </div>
 
-        {/* Location Toast */}
+        {/* Floating Notification Toast */}
         {locationToast && (
-          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20 px-3.5 py-1.5 bg-[#172033] text-white rounded-md text-xs font-mono shadow-lg border border-[#334155]">
-            {locationToast}
+          <div className="absolute top-4 left-1/2 -translate-x-1/2 z-30 px-4 py-2 bg-[#172033] text-white rounded-lg text-xs font-mono shadow-2xl border border-[#334155] flex items-center space-x-2 animate-in fade-in slide-in-from-top-2">
+            <Radio className="w-3.5 h-3.5 text-[#38BDF8] animate-pulse" />
+            <span>{locationToast}</span>
           </div>
         )}
 
@@ -435,13 +708,21 @@ export const UrbanMap: React.FC = () => {
             −
           </button>
           <button
-            onClick={handleLocateMe}
-            title="Locate Me (Device GPS)"
-            className={`w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded shadow-md flex items-center justify-center ${
-              isLocating ? 'text-[#2563EB] animate-spin' : userLocation ? 'text-[#2563EB]' : 'text-[#64748B]'
+            onClick={handleLocateMeClick}
+            title="Locate Me (Real Device GPS)"
+            className={`w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded shadow-md flex items-center justify-center transition ${
+              isLocating 
+                ? 'text-[#2563EB] ring-2 ring-[#2563EB]' 
+                : userLocation 
+                  ? 'text-[#2563EB] bg-[#EFF6FF]' 
+                  : 'text-[#64748B]'
             }`}
           >
-            <Crosshair className="w-4 h-4" />
+            {isLocating ? (
+              <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
+            ) : (
+              <Crosshair className="w-4 h-4" />
+            )}
           </button>
           <button
             onClick={() => {
@@ -449,33 +730,82 @@ export const UrbanMap: React.FC = () => {
               setSearchResult(null);
               mapInstanceRef.current?.flyTo([28.4595, 77.0266], 14);
             }}
-            title="Home (Gurugram Demo Center)"
+            title="Home (Gurugram Corridor)"
             className="w-8 h-8 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded shadow-md flex items-center justify-center"
           >
             <Compass className="w-4 h-4" />
           </button>
         </div>
 
-        {/* User Geolocation Telemetry Panel */}
-        {userLocation && (
-          <div className="absolute bottom-4 left-4 z-10 p-3 bg-[#FFFFFF] border border-[#E2E8F0] rounded-lg max-w-xs font-mono text-xs text-[#64748B] shadow-lg space-y-1">
-            <div className="flex justify-between border-b border-[#E2E8F0] pb-1">
-              <span className="font-bold text-[#2563EB]">DEVICE GPS TELEMETRY</span>
-              <span className="text-[#059669]">±{userLocation.accuracy}m</span>
+        {/* Real User GPS Location Information HUD Panel */}
+        {userLocation && showLocationPanel && (
+          <div className="absolute bottom-4 left-4 z-20 p-3 bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl max-w-xs w-72 font-mono text-xs text-[#64748B] shadow-2xl space-y-2">
+            <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-1.5">
+              <div className="flex items-center space-x-1.5">
+                <span className="w-2 h-2 rounded-full bg-[#059669] animate-pulse"></span>
+                <span className="font-bold text-[#172033]">LIVE GPS TELEMETRY</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="text-[10px] px-1.5 py-0.5 bg-[#EFF6FF] text-[#2563EB] font-bold rounded">
+                  ±{userLocation.accuracy}m
+                </span>
+                <button 
+                  onClick={() => setShowLocationPanel(false)}
+                  className="text-[#94A3B8] hover:text-[#172033] p-0.5"
+                  title="Minimize"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <div className="flex justify-between text-[11px]">
-              <span>Latitude:</span>
-              <span className="text-[#172033] font-bold">{userLocation.lat.toFixed(6)}</span>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="bg-[#F8FAFC] p-1.5 rounded border border-[#E2E8F0]">
+                <span className="text-[10px] text-[#8290A3] block">LATITUDE</span>
+                <span className="text-[#172033] font-bold">{userLocation.lat.toFixed(6)}°</span>
+              </div>
+              <div className="bg-[#F8FAFC] p-1.5 rounded border border-[#E2E8F0]">
+                <span className="text-[10px] text-[#8290A3] block">LONGITUDE</span>
+                <span className="text-[#172033] font-bold">{userLocation.lng.toFixed(6)}°</span>
+              </div>
             </div>
-            <div className="flex justify-between text-[11px]">
-              <span>Longitude:</span>
-              <span className="text-[#172033] font-bold">{userLocation.lng.toFixed(6)}</span>
+
+            <div className="flex justify-between items-center text-[10px] text-[#64748B] pt-0.5">
+              <span>Status: <b className="text-[#059669]">Continuous Tracking</b></span>
+              <span>{userLocation.timestamp}</span>
             </div>
-            <div className="flex justify-between text-[11px]">
-              <span>Timestamp:</span>
-              <span className="text-[#8290A3]">{userLocation.timestamp}</span>
+
+            {/* Privacy Section */}
+            <div className="border-t border-[#E2E8F0] pt-1.5 flex items-center justify-between text-[10px]">
+              <div className="flex items-center space-x-1 text-[#64748B]">
+                <Lock className="w-3 h-3 text-[#059669]" />
+                <span>Local only (Not saved to DB)</span>
+              </div>
+              <label className="flex items-center space-x-1 cursor-pointer text-[#2563EB] font-bold hover:underline">
+                <input
+                  type="checkbox"
+                  checked={shareLiveLocation}
+                  onChange={(e) => {
+                    setShareLiveLocation(e.target.checked);
+                    showToast(e.target.checked ? 'Live Location Sharing ENABLED for Fleet' : 'Live Location Sharing DISABLED');
+                  }}
+                  className="accent-[#2563EB] w-3 h-3 cursor-pointer"
+                />
+                <span>Share</span>
+              </label>
             </div>
           </div>
+        )}
+
+        {/* Re-open telemetry panel button if closed */}
+        {userLocation && !showLocationPanel && (
+          <button
+            onClick={() => setShowLocationPanel(true)}
+            className="absolute bottom-4 left-4 z-20 px-3 py-1.5 bg-[#FFFFFF] border border-[#CBD5E1] rounded-lg text-xs font-mono text-[#2563EB] shadow-lg flex items-center space-x-1.5 hover:bg-[#F8FAFC]"
+          >
+            <Radio className="w-3.5 h-3.5 text-[#2563EB] animate-pulse" />
+            <span>GPS: {userLocation.lat.toFixed(4)}, {userLocation.lng.toFixed(4)}</span>
+          </button>
         )}
 
         {/* Inspector Detail Drawer */}

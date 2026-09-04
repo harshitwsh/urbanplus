@@ -138,7 +138,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 1. Real-time Firestore Listener: /vehicles and /buses
   useEffect(() => {
-    const unsubVehicles = onSnapshot(
+    let unsubSecondary: (() => void) | null = null;
+    const unsubPrimary = onSnapshot(
       collection(db, 'vehicles'),
       (snapshot) => {
         if (!snapshot.empty) {
@@ -148,15 +149,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
           setBuses(list);
           setIsFirestoreLive(true);
-          if (!selectedBus && list.length > 0) {
-            setSelectedBus(list[0]);
-          }
           if (!fleetEngineRef.current && list.length > 0) {
             fleetEngineRef.current = new FleetSimulationEngine(list);
           }
-        } else {
-          // Fallback to /buses
-          onSnapshot(collection(db, 'buses'), (busSnap) => {
+        } else if (!unsubSecondary) {
+          unsubSecondary = onSnapshot(collection(db, 'buses'), (busSnap) => {
             if (!busSnap.empty) {
               const list: Bus[] = [];
               busSnap.forEach((docSnap) => {
@@ -164,14 +161,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               });
               setBuses(list);
               setIsFirestoreLive(true);
-              if (!selectedBus && list.length > 0) {
-                setSelectedBus(list[0]);
-              }
               if (!fleetEngineRef.current && list.length > 0) {
                 fleetEngineRef.current = new FleetSimulationEngine(list);
               }
             }
-          });
+          }, (err) => console.warn('Firestore buses onSnapshot error:', err));
         }
       },
       (error) => {
@@ -179,12 +173,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    return () => unsubVehicles();
-  }, [selectedBus]);
+    return () => {
+      unsubPrimary();
+      if (unsubSecondary) unsubSecondary();
+    };
+  }, []);
 
   // 2. Real-time Firestore Listener: /roadDefects and /events
   useEffect(() => {
-    const unsubRoadDefects = onSnapshot(
+    let unsubSecondary: (() => void) | null = null;
+    const unsubPrimary = onSnapshot(
       collection(db, 'roadDefects'),
       (snapshot) => {
         if (!snapshot.empty) {
@@ -193,22 +191,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push({ id: docSnap.id, ...(docSnap.data() as any) } as RoadDefect);
           });
           setRoadDefects(list);
-          if (!selectedDefect && list.length > 0) {
-            setSelectedDefect(list[0]);
-          }
-        } else {
-          onSnapshot(collection(db, 'events'), (evSnapshot) => {
+        } else if (!unsubSecondary) {
+          unsubSecondary = onSnapshot(collection(db, 'events'), (evSnapshot) => {
             if (!evSnapshot.empty) {
               const list: RoadDefect[] = [];
               evSnapshot.forEach((docSnap) => {
                 list.push({ id: docSnap.id, ...(docSnap.data() as any) } as RoadDefect);
               });
               setRoadDefects(list);
-              if (!selectedDefect && list.length > 0) {
-                setSelectedDefect(list[0]);
-              }
             }
-          });
+          }, (err) => console.warn('Firestore events onSnapshot error:', err));
         }
       },
       (error) => {
@@ -216,8 +208,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    return () => unsubRoadDefects();
-  }, [selectedDefect]);
+    return () => {
+      unsubPrimary();
+      if (unsubSecondary) unsubSecondary();
+    };
+  }, []);
 
   // 3. Real-time Firestore Listener: /incidents
   useEffect(() => {
@@ -242,7 +237,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 4. Real-time Firestore Listener: /trafficEvents and /trafficHotspots
   useEffect(() => {
-    const unsubTraffic = onSnapshot(
+    let unsubSecondary: (() => void) | null = null;
+    const unsubPrimary = onSnapshot(
       collection(db, 'trafficEvents'),
       (snapshot) => {
         if (!snapshot.empty) {
@@ -251,8 +247,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push({ id: docSnap.id, ...(docSnap.data() as any) } as TrafficHotspot);
           });
           setTrafficHotspots(list);
-        } else {
-          onSnapshot(collection(db, 'trafficHotspots'), (thSnapshot) => {
+        } else if (!unsubSecondary) {
+          unsubSecondary = onSnapshot(collection(db, 'trafficHotspots'), (thSnapshot) => {
             if (!thSnapshot.empty) {
               const list: TrafficHotspot[] = [];
               thSnapshot.forEach((docSnap) => {
@@ -260,7 +256,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               });
               setTrafficHotspots(list);
             }
-          });
+          }, (err) => console.warn('Firestore trafficHotspots error:', err));
         }
       },
       (error) => {
@@ -268,7 +264,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    return () => unsubTraffic();
+    return () => {
+      unsubPrimary();
+      if (unsubSecondary) unsubSecondary();
+    };
   }, []);
 
   // 5. Real-time Firestore Listener: /alerts
@@ -294,7 +293,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // 6. Real-time Firestore Listener: /actions and /workOrders
   useEffect(() => {
-    const unsubActions = onSnapshot(
+    let unsubSecondary: (() => void) | null = null;
+    const unsubPrimary = onSnapshot(
       collection(db, 'actions'),
       (snapshot) => {
         if (!snapshot.empty) {
@@ -303,8 +303,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             list.push({ id: docSnap.id, ...(docSnap.data() as any) } as ActionItem);
           });
           setActionItems(list);
-        } else {
-          onSnapshot(collection(db, 'workOrders'), (woSnapshot) => {
+        } else if (!unsubSecondary) {
+          unsubSecondary = onSnapshot(collection(db, 'workOrders'), (woSnapshot) => {
             if (!woSnapshot.empty) {
               const list: ActionItem[] = [];
               woSnapshot.forEach((docSnap) => {
@@ -312,7 +312,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               });
               setActionItems(list);
             }
-          });
+          }, (err) => console.warn('Firestore workOrders error:', err));
         }
       },
       (error) => {
@@ -320,7 +320,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
     );
 
-    return () => unsubActions();
+    return () => {
+      unsubPrimary();
+      if (unsubSecondary) unsubSecondary();
+    };
   }, []);
 
   // Real-time Fleet Edge Motion Simulation Loop

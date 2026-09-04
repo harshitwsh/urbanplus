@@ -1,9 +1,9 @@
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Support Vercel / Vite environment variables with production defaults
+// Centralized production Firebase configuration supporting Vite and Vercel environment variables
 const env = (import.meta as unknown as { env?: Record<string, string> })?.env || {};
 
 const firebaseConfig = {
@@ -16,38 +16,10 @@ const firebaseConfig = {
   measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-FBSDMSC80Z"
 };
 
-// Log active Firebase config (never expose API keys or secrets)
-console.log("🔥 FIREBASE ACTIVE CONFIG:", {
-  projectId: firebaseConfig.projectId,
-  authDomain: firebaseConfig.authDomain,
-  appId: firebaseConfig.appId
-});
-
-// Single singleton Firebase instance
+// Singleton Firebase Application Instance
 export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
-
-console.log("🔥 FIRESTORE INITIALIZED:", db.app.options.projectId);
-
-// Temporary Firestore connection test
-(async () => {
-  try {
-    const testDocRef = doc(db, "connectionTest", "testDoc");
-    await setDoc(testDocRef, {
-      testMessage: "Firestore connection test",
-      timestamp: serverTimestamp()
-    });
-    const docSnap = await getDoc(testDocRef);
-    if (docSnap.exists()) {
-      console.log("🔥 FIREBASE CONNECTION SUCCESS", docSnap.data());
-    } else {
-      console.log("🔥 FIREBASE CONNECTION SUCCESS");
-    }
-  } catch (error) {
-    console.error("🔥 FIREBASE CONNECTION FAILED:", error);
-  }
-})();
 
 export default app;

@@ -1,128 +1,154 @@
-# URBANPULSE AI — AI-Powered Mobile Urban Intelligence Platform
-**SIH26124 Prototype Project**  
-**Organization:** Bharat Electronics Limited (BEL)
+# URBANPULSE — Real-Time Urban Intelligence & Smart City Command Center
 
-> *"Transforming existing public transport buses into mobile AI-powered urban sensing units."*
+**SIH26124 Project** | **Organization:** Bharat Electronics Limited (BEL)
 
----
-
-## 🚀 Executive Overview & Vision
-
-**URBANPULSE AI** turns public transit buses into mobile edge-sensing nodes. As buses traverse municipal routes, onboard quad-cameras run real-time edge computer vision to detect:
-- 🕳️ **Road Surface Defects** (Potholes, rutting, asphalt degradation)
-- 🌧️ **Monsoon Hazards** (Waterlogging, submerged underpasses)
-- 🚧 **Infrastructure Impairments** (Dislodged dividers, missing zebra crossings, obscured signs)
-- 🚗 **Multi-Modal Traffic & Bottlenecks** (Vehicle classification, congestion peaks, delay forecasting)
-- 🛡️ **Public Safety Events** (Hit & run alerts, reckless driving, vulnerable pedestrian proximity in school zones)
-
-### Core Differentiator: Multi-Pass Evidence Fusion
-Unlike static CCTVs or citizen complaint apps, UrbanPulse AI implements **Multi-Pass Evidence Fusion**:
-When BUS-104 detects a pothole at 10:42 AM, BUS-117 passes 12 minutes later, and BUS-131 passes later in the day, the platform intelligently clusters their spatial coordinates ($\Delta d < 15.0\text{m}$) into **1 verified urban defect**. Algorithmic certainty escalates automatically (e.g. 82.4% → 91.2% → 96.7%), generating automated municipal work orders with strict SLA tracking.
+> *Transforming public transit buses and city infrastructure into a real-time mobile urban sensing network.*
 
 ---
 
-## 🏛️ Traditional vs. UrbanPulse AI Comparison
+## 1. Project Overview
 
-| Feature | Traditional Municipal Inspection | URBANPULSE AI Platform |
-| :--- | :--- | :--- |
-| **Sensing Coverage** | Fixed static CCTVs (blind spots everywhere) | **Dynamic Mobile Fleet** (Coverage across all bus corridors) |
-| **Detection Speed** | Days / weeks after citizen complaints | **Real-time Edge AI Inference** (42ms latency) |
-| **Duplicate Reports** | Multiple noisy complaints for 1 defect | **Multi-Pass Evidence Fusion** (Single verified issue) |
-| **Bandwidth Usage** | Heavy raw video cloud streaming | **72% Bandwidth Saving** (Metadata & event crops only) |
-| **Privacy Protection** | Unfiltered public surveillance | **Privacy by Design** (Edge face/plate obfuscation) |
-| **Actionability** | Manual paper assignments | **Automated SLA Kanban Work Orders** |
+**UrbanPulse** is a real-time smart city intelligence platform that integrates edge computer vision, citizen reporting, mobile fleet telemetry, and GIS spatial mapping into a unified Command Center. The platform processes road surface defects (potholes, asphalt cracks, waterlogging), traffic bottlenecks, public safety incidents, and municipal work order lifecycles.
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## 2. Problem Statement
 
-### Frontend Command Center (`/urbanpulse-ai`)
-- **Framework:** React 18 with TypeScript & Vite
-- **Styling:** Tailwind CSS (Government Dark Command-Center Theme)
-- **Icons:** Lucide React
-- **GIS & Mapping:** Leaflet / React-Leaflet with custom dark tiles and interactive marker popups
-- **Charts & Data Viz:** Recharts (Hourly traffic curves, modal split, confidence escalation graphs)
-- **Edge AI Simulator:** HTML5 Canvas object detection bounding box overlay (24 FPS HUD)
-
-### Backend API Services (`/backend`)
-- **Framework:** Python 3.14 FastAPI + Pydantic v2 + Uvicorn
-- **AI Modules:**
-  - `backend/ai/road_damage/detector.py`: YOLO / PyTorch road defect inference interface
-  - `backend/ai/vehicle_detection/density.py`: Traffic volume & density calculator
-  - `backend/ai/ocr/plate_reader.py`: Number plate localization & OCR pipeline
-  - `backend/ai/tracking/fusion.py`: Spatial-temporal DBSCAN-style Evidence Fusion algorithm
-  - `backend/ai/pedestrian_risk/evaluator.py`: Vulnerable road user proximity scoring
+Traditional municipal infrastructure monitoring suffers from:
+- **Coverage Gaps:** Fixed CCTV cameras have permanent blind spots on connecting corridors.
+- **Reporting Delays:** Infrastructure defects remain unaddressed for weeks until manual citizen complaints are filed.
+- **Duplicate Complaints:** Multiple citizens file redundant reports for the same pothole without unified tracking.
+- **Bandwidth Heavy Surveillance:** Streaming 24/7 raw video feeds over cellular networks is expensive and privacy-intrusive.
 
 ---
 
-## 💻 Installation & Running Locally
+## 3. The UrbanPulse Solution
+
+UrbanPulse solves these challenges with **Mobile Sensing + Multi-Pass Evidence Fusion**:
+- **Mobile Sensor Network:** Municipal buses, traffic police vehicles, and municipal fleets act as moving edge vision sensors covering 100% of city transit routes.
+- **Edge AI Inference:** Onboard hardware runs YOLOv8 optical inference at 24 FPS, detecting defects locally and transmitting only lightweight metadata + cropped snapshots (saving 72% bandwidth).
+- **Multi-Pass Evidence Fusion:** Multiple fleet passes over the same location ($\Delta d < 15.0\text{m}$) automatically cluster detections into a single verified defect with escalating confidence certainty (82.4% → 91.2% → 96.7%).
+- **Real-Time Command Center:** Fused events instantly sync to Cloud Firestore, powering the 2D GIS Map, 3D Spatial Globe, and automated SLA Work Orders.
+
+---
+
+## 4. Key Features
+
+- **2D Google-Style Interactive Map:** Hardware-accelerated Leaflet map with real-time location search autocomplete, custom drop pins, GPS locating, and `minZoom: 2` world globe zoom level.
+- **3D Spatial Globe Visualization:** Photorealistic 3D Earth Satellite Globe (Three.js WebGL) and 3D Cesium GIS Engine for macro spatial risk cluster inspection.
+- **Edge Computer Vision Workstation:** Onboard bus camera feed simulator with pixel-accurate road bounding boxes, category filters, target geometry inspector, and defect injection.
+- **Realtime Command Center:** Live telemetry feed, incident lifecycle management (New -> Under Review -> Verified -> Assigned -> Resolved), and role-based operator controls.
+- **Citizen Reporting Portal:** Mobile-ready 4-step issue reporting flow with GPS location locking, category tagging, photo upload, and instant Firestore tracking ID generation.
+- **Firebase Authentication & Firestore Sync:** Persistent login via `browserLocalPersistence`, email verification, Google Sign-In, and real-time `onSnapshot` Firestore listeners.
+
+---
+
+## 5. Technology Stack
+
+- **Frontend Core:** React 18, TypeScript, Vite
+- **Styling & UI:** Tailwind CSS, Lucide React Icons
+- **GIS & Mapping:** Leaflet, OpenStreetMap, Esri World Imagery, CesiumJS, Three.js WebGL
+- **Database & Auth:** Firebase Authentication, Cloud Firestore, Firebase Storage
+- **Charts & Data Visualization:** Recharts
+
+---
+
+## 6. Architecture Overview
+
+```
+[ Citizen Mobile App ] ──┐
+                         ├──► [ Cloud Firestore ] ──► [ UrbanPulse Command Center ]
+[ Bus Edge Dashcam ]   ──┤        ▲     │                 ├── 2D GIS Map (Leaflet)
+                         │        │     ▼                 ├── 3D Spatial Globe (Three.js)
+[ CCTV & Traffic Police] ┘   [ Evidence Fusion ]          └── SLA Kanban Work Orders
+```
+
+---
+
+## 7. Setup & Local Development Instructions
 
 ### Prerequisites
-- Node.js v18+ and npm v9+
-- Python 3.10+ (for FastAPI backend)
+- **Node.js:** v18.0.0 or higher
+- **npm:** v9.0.0 or higher
 
-### 1. Launching the Command Center Frontend
+### Step 1: Clone & Install Dependencies
 ```bash
-# Navigate to project directory
-cd urbanpulse-ai
-
-# Install dependencies
+git clone https://github.com/harshitwsh/urbanplus.git
+cd urbanplus
 npm install
+```
 
-# Start Vite Development Server
+### Step 2: Configure Environment Variables
+Create a `.env` file in the project root (optional if using default demo Firebase config):
+```env
+VITE_FIREBASE_API_KEY=AIzaSy...
+VITE_FIREBASE_AUTH_DOMAIN=urbanpulse-2026.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=urbanpulse-2026
+VITE_FIREBASE_STORAGE_BUCKET=urbanpulse-2026.firebasestorage.app
+VITE_FIREBASE_MESSAGING_SENDER_ID=235538520233
+VITE_FIREBASE_APP_ID=1:235538520233:web:c934...
+```
+
+### Step 3: Run Local Development Server
+```bash
 npm run dev
 ```
-Open `http://localhost:3000` in your browser.
+Open `http://localhost:5173` in your browser.
 
-### 2. Launching the Python FastAPI Backend (Optional)
+---
+
+## 8. Build & Production Deployment
+
+### Production Build
 ```bash
-# Navigate to backend directory
-cd backend
-
-# Install Python requirements
-pip install -r requirements.txt
-
-# Run FastAPI server with Uvicorn
-python main.py
+# Type check and build Vite bundle
+npm run build
 ```
-Backend API interactive documentation available at `http://localhost:8000/docs`.
+
+### Preview Production Build Locally
+```bash
+npm run preview
+```
 
 ---
 
-## 🔑 Demo Access Roles & Credentials
+## 9. Project Structure
 
-Click **"Enter Demo Command Center"** or select a role on the login screen:
-- **Transport Authority:** Complete city-wide operational oversight & fleet telemetry
-- **Traffic Operator:** Congestion bottleneck engine & signal optimization
-- **Road Maintenance:** Action Center Kanban work orders & SLA dispatch
-- **Security Reviewer:** Human verification for safety incidents & plate OCR logs
-
----
-
-## 🏆 SIH Judge 60-Second Walkthrough Script
-
-1. Click **"START LIVE DEMO"** on the top navigation bar or open the **"Judge Guide"** modal.
-2. Step 1: Inspect mobile AI node **BUS-104** on the Fleet Monitoring page.
-3. Step 2: Switch to **Edge AI Vision** to observe onboard 24 FPS detection bounding boxes.
-4. Step 3: Open **Live GIS Map** to locate pothole `#UP-10482` on Golf Course Road.
-5. Step 4: Open **Evidence Fusion Center** to view 3 independent bus passes (BUS-104, BUS-117, BUS-131).
-6. Step 5: Verify confidence escalation curve (82.4% → 96.7%).
-7. Step 6: Check **Traffic Hotspots** to analyze the +14 min delay bottleneck.
-8. Step 7: Open **Action Center** to dispatch the municipal maintenance work order.
-9. Step 8: Open **Reports** to export print-ready PDF and CSV audit logs.
-
----
-
-## 🔒 Privacy & Security Commitment
-
-- **Zero Continuous Stream:** Raw video remains in volatile onboard ring buffers and is discarded.
-- **Edge Anonymization:** Faces and non-essential regions are blurred prior to event snapshot generation.
-- **Controlled Access:** License plate OCR data is restricted to authorized security role profiles.
-- **Data Expiry:** Non-actioned metadata packets automatically purge after 30 days.
+```
+src/
+├── components/
+│   ├── actions/          # SLA Work Orders & Action Center
+│   ├── analytics/        # Mobility & Traffic Analytics
+│   ├── architecture/     # AI Pipeline Architecture View
+│   ├── auth/             # Login, Signup & Role Selection
+│   ├── citizen/          # Citizen Issue Reporting & Trackers
+│   ├── dashboard/        # Realtime Command Center
+│   ├── dashcam/          # Mobile City Eyes & Fleet Dashcams
+│   ├── evidence/         # Evidence Fusion Sighting Inspector
+│   ├── fleet/            # Fleet Operations & Telemetry
+│   ├── globe/            # Three.js 3D WebGL Spatial Globe
+│   ├── incidents/        # Incident Management Center
+│   ├── layout/           # AppShell, Sidebar, Header, Navbar
+│   ├── map/              # 2D UrbanMap & 3D CesiumMapView
+│   └── vision/           # Edge Computer Vision Workstation
+├── context/
+│   ├── AppContext.tsx    # Global App State & Firestore Realtime Sync
+│   └── AuthContext.tsx   # Firebase Auth & User Profile Management
+├── lib/
+│   └── firebase.ts       # Centralized Firebase Singleton Init
+├── services/             # AI Detection, Citizen Reporting & Storage Services
+└── types/                # TypeScript Interfaces & Enums
+```
 
 ---
 
-## 📄 License & Attribution
+## 10. Known External Dependencies
 
-Developed for **SIH26124** — Problem Statement by **Bharat Electronics Limited (BEL)**.  
-*All registration numbers and driver IDs depicted in demo simulations are strictly fictional.*
+- **OpenStreetMap / Esri Tiles:** Requires active internet connection for GIS map tile fetching.
+- **Firebase Auth & Firestore:** Synchronizes live state with `urbanpulse-2026` Firebase cloud.
+
+---
+
+## 11. License & Attribution
+
+Developed for **SIH26124** — Problem Statement by **Bharat Electronics Limited (BEL)**.

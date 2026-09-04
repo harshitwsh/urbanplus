@@ -130,34 +130,41 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
           </button>
 
           {/* Logged in User Profile Avatar in Header */}
-          {user && (
-            <div 
-              onClick={() => setActiveTab('profile')}
-              className="flex items-center space-x-2 pl-1 cursor-pointer group"
-              title={`View profile for ${displayName}`}
-            >
-              {photoURL ? (
-                <img
-                  src={photoURL}
-                  alt={displayName}
-                  className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover group-hover:ring-2 group-hover:ring-[#2563EB] transition"
-                />
-              ) : (
-                <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs uppercase shadow-xs group-hover:ring-2 group-hover:ring-blue-400 transition">
-                  {displayName.substring(0, 2)}
-                </div>
-              )}
-            </div>
-          )}
+          {user ? (
+            <>
+              <div 
+                onClick={() => setActiveTab('profile')}
+                className="flex items-center space-x-2 pl-1 cursor-pointer group"
+                title={`View profile for ${displayName}`}
+              >
+                {photoURL ? (
+                  <img
+                    src={photoURL}
+                    alt={displayName}
+                    className="w-7 h-7 rounded-full border border-[#CBD5E1] object-cover group-hover:ring-2 group-hover:ring-[#2563EB] transition"
+                  />
+                ) : (
+                  <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs uppercase shadow-xs group-hover:ring-2 group-hover:ring-blue-400 transition">
+                    {displayName.substring(0, 2)}
+                  </div>
+                )}
+              </div>
 
-          {/* Logout Button if Authenticated */}
-          {user && (
+              <button
+                onClick={handleSignOut}
+                title="Sign Out of Firebase"
+                className="p-1.5 bg-[#F8FAFC] hover:bg-[#FEF2F2] text-[#64748B] hover:text-[#DC2626] border border-[#E2E8F0] hover:border-[#FECACA] rounded-md transition"
+              >
+                <LogOut className="w-4 h-4" />
+              </button>
+            </>
+          ) : (
             <button
-              onClick={handleSignOut}
-              title="Sign Out of Firebase"
-              className="p-1.5 bg-[#F8FAFC] hover:bg-[#FEF2F2] text-[#64748B] hover:text-[#DC2626] border border-[#E2E8F0] hover:border-[#FECACA] rounded-md transition"
+              onClick={() => setActiveTab('login')}
+              className="px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#2563EB] hover:text-[#1D4ED8] text-xs font-semibold rounded-md border border-[#BFDBFE] transition shadow-xs flex items-center space-x-1"
             >
-              <LogOut className="w-4 h-4" />
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>Sign In</span>
             </button>
           )}
         </div>

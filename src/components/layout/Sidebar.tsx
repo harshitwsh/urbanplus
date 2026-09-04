@@ -170,9 +170,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
       <div className="p-3 border-t border-[#E2E8F0] bg-[#F8FAFC] space-y-2">
         <div className="flex items-center justify-between">
           <div 
-            onClick={() => handleSelectTab('profile')}
+            onClick={() => handleSelectTab(user ? 'profile' : 'login')}
             className="flex items-center space-x-2.5 min-w-0 flex-1 cursor-pointer group"
-            title="View Profile Details"
+            title={user ? "View Profile Details" : "Sign In / Register"}
           >
             {photoURL ? (
               <img
@@ -182,31 +182,41 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
               />
             ) : (
               <div className="w-8 h-8 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs shrink-0 uppercase shadow-xs group-hover:ring-2 group-hover:ring-blue-400 transition">
-                {fullName.substring(0, 2)}
+                {user ? fullName.substring(0, 2) : 'GP'}
               </div>
             )}
             <div className="min-w-0 flex-1">
-              <span className="font-bold text-[#172033] block truncate text-xs group-hover:text-[#2563EB] transition" title={fullName}>
-                {fullName}
+              <span className="font-bold text-[#172033] block truncate text-xs group-hover:text-[#2563EB] transition" title={user ? fullName : 'Public Guest'}>
+                {user ? fullName : 'Public Guest'}
               </span>
-              <span className="text-[10px] text-[#64748B] block truncate" title={email}>
-                {email}
+              <span className="text-[10px] text-[#64748B] block truncate" title={user ? email : 'Click to Sign In'}>
+                {user ? email : 'Click to Sign In'}
               </span>
               <div className="flex items-center space-x-1 text-[9px] text-[#2563EB] font-mono truncate pt-0.5">
-                <span className="uppercase font-semibold">{role.replace('_', ' ')}</span>
+                <span className="uppercase font-semibold">{user ? role.replace('_', ' ') : 'GUEST MODE'}</span>
                 <span>•</span>
-                <span className="text-[#64748B] truncate">{organization}</span>
+                <span className="text-[#64748B] truncate">{user ? organization : 'SIH Demo Platform'}</span>
               </div>
             </div>
           </div>
 
-          <button
-            onClick={handleSignOut}
-            title="Sign Out of Firebase"
-            className="p-1.5 text-[#8290A3] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-md transition shrink-0 ml-1"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
+          {user ? (
+            <button
+              onClick={handleSignOut}
+              title="Sign Out of Firebase"
+              className="p-1.5 text-[#8290A3] hover:text-[#DC2626] hover:bg-[#FEF2F2] rounded-md transition shrink-0 ml-1"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => handleSelectTab('login')}
+              title="Sign In to Firebase"
+              className="px-2 py-1 bg-[#2563EB] hover:bg-blue-700 text-white text-[11px] font-semibold rounded transition shrink-0 ml-1"
+            >
+              Login
+            </button>
+          )}
         </div>
       </div>
     </div>

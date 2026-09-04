@@ -59,29 +59,7 @@ export const AppShell: React.FC = () => {
     );
   }
 
-  // 2. Unauthenticated User Flow: Show Landing, Login, Signup, or Forgot Password
-  if (!user && !isAuthenticated) {
-    if (activeTab === 'landing') {
-      return <LandingPage />;
-    }
-    if (activeTab === 'signup') {
-      return <LoginView initialMode="SIGNUP" />;
-    }
-    if (activeTab === 'forgot_password') {
-      return <LoginView initialMode="FORGOT_PASSWORD" />;
-    }
-    return <LoginView initialMode="LOGIN" />;
-  }
-
-  // 3. User is signed in but email is NOT verified yet (and not Google user)
-  if (user && !user.emailVerified) {
-    if (activeTab === 'landing') {
-      return <LandingPage />;
-    }
-    return <EmailVerificationView />;
-  }
-
-  // 4. Authenticated & Verified User Views
+  // 2. Standalone Views (Landing, Login, Signup, Forgot Password, Verification, Role Selection)
   if (activeTab === 'landing') {
     return <LandingPage />;
   }
@@ -98,7 +76,7 @@ export const AppShell: React.FC = () => {
     return <LoginView initialMode="FORGOT_PASSWORD" />;
   }
 
-  if (activeTab === 'verify_email') {
+  if (activeTab === 'verify_email' || (user && !user.emailVerified)) {
     return <EmailVerificationView />;
   }
 

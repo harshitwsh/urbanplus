@@ -350,6 +350,32 @@ export const CesiumMapView: React.FC<CesiumMapViewProps> = ({ onSwitchTo2D }) =>
       viewerRef.current = viewer;
       setViewerBasemap('STREET');
 
+      // Configure strict camera limits & controller to prevent infinite zoom-out and globe sinking
+      const controller = viewer.scene.screenSpaceCameraController;
+      controller.minimumZoomDistance = 100.0; // 100m min altitude
+      controller.maximumZoomDistance = 22000000.0; // 22,000 km max altitude (full globe fits perfectly in frame)
+      controller.enableCollisionDetection = true; // Prevent clipping below terrain surface
+
+      // Re-center pitch towards top-down when zooming out to high altitudes (>5,000km) so globe stays centered
+      viewer.camera.changed.addEventListener(() => {
+        if (!viewerRef.current || viewerRef.current.isDestroyed()) return;
+        const cam = viewerRef.current.camera;
+        const height = cam.positionCartographic.height;
+        if (height > 5000000) {
+          const pitchDeg = Cesium.Math.toDegrees(cam.pitch);
+          if (pitchDeg > -70) {
+            cam.setView({
+              orientation: {
+                heading: cam.heading,
+                pitch: Cesium.Math.toRadians(-85),
+                roll: 0.0
+              }
+            });
+          }
+        }
+      });
+      viewer.camera.percentageChanged = 0.05;
+
       // Initial viewpoint: User's real GPS position if available, otherwise city corridor
       const initLat = userLocation ? userLocation.lat : 28.4595;
       const initLng = userLocation ? userLocation.lng : 77.0266;
@@ -640,16 +666,23 @@ export const CesiumMapView: React.FC<CesiumMapViewProps> = ({ onSwitchTo2D }) =>
   }, [buses, roadDefects, incidents, trafficHotspots, actionItems, layers]);
 
   // Fly Camera to Coordinates
-  const flyToLocation = (lat: number, lng: number, altitude = 1500) => {
+  const flyToLocation = (lat: number, lng: number, altitude = 1500, customPitch?: number) => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
 
+    // High altitude globe views (>5,000km) pitch straight down (-85deg) so the 3D globe stays centered
+    const targetPitch = customPitch !== undefined 
+      ? customPitch 
+      : altitude > 5000000 
+        ? -85 
+        : -45;
+
     viewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(lng, lat, altitude),
-      duration: 1.5,
+      duration: 1.8,
       orientation: {
         heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-45),
+        pitch: Cesium.Math.toRadians(targetPitch),
         roll: 0.0
       }
     });
@@ -945,30 +978,61 @@ export const CesiumMapView: React.FC<CesiumMapViewProps> = ({ onSwitchTo2D }) =>
 
         {/* Right Floating Vertical GIS Map Controls */}
         <div className="absolute right-4 top-4 z-20 flex flex-col space-y-2 font-mono text-xs">
+          {/* Zoom In */}
           <button
             onClick={() => {
               const viewer = viewerRef.current;
-              if (viewer) viewer.camera.zoomIn(1000);
+              if (!viewer) return;
+              const h = viewer.camera.positionCartographic.height;
+              const step = Math.max(250, h * 0.45);
+              viewer.camera.zoomIn(step);
             }}
             title="Zoom In"
-            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center font-bold text-base transition"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center font-bold text-base transition active:scale-95"
           >
             +
           </button>
+          {/* Zoom Out */}
           <button
             onClick={() => {
               const viewer = viewerRef.current;
-              if (viewer) viewer.camera.zoomOut(1000);
+              if (!viewer) return;
+              const h = viewer.camera.positionCartographic.height;
+              const step = Math.max(250, h * 0.45);
+              viewer.camera.zoomOut(step);
             }}
             title="Zoom Out"
-            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center font-bold text-base transition"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#172033] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center font-bold text-base transition active:scale-95"
           >
             −
           </button>
+          {/* Full 3D Globe View Preset */}
+          <button
+            onClick={() => {
+              flyToLocation(28.4595, 77.0266, 18000000);
+              showToast('Camera centered on Full 3D Globe View');
+            }}
+            title="Full 3D Globe View"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition active:scale-95"
+          >
+            <Globe className="w-4 h-4 text-[#2563EB]" />
+          </button>
+          {/* 25 km City Corridor Preset */}
+          <button
+            onClick={() => {
+              flyToLocation(28.4595, 77.0266, 25000);
+              showToast('Camera navigated to 25 km City Region View');
+            }}
+            title="25 km City Region View"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition font-mono text-[10px] font-extrabold active:scale-95"
+          >
+            25k
+          </button>
+          {/* Locate Me */}
           <button
             onClick={handleLocateMeClick}
             title="Locate Me (Real Device GPS)"
-            className={`w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition ${
+            className={`w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition active:scale-95 ${
               isLocating 
                 ? 'text-[#2563EB] ring-2 ring-[#2563EB]' 
                 : userLocation 
@@ -982,17 +1046,19 @@ export const CesiumMapView: React.FC<CesiumMapViewProps> = ({ onSwitchTo2D }) =>
               <Crosshair className="w-4 h-4" />
             )}
           </button>
+          {/* Reset View */}
           <button
             onClick={resetMap}
             title="Reset to Master Corridor"
-            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition active:scale-95"
           >
             <Compass className="w-4 h-4" />
           </button>
+          {/* Toggle Fullscreen */}
           <button
             onClick={toggleFullscreen}
             title="Toggle Fullscreen"
-            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition"
+            className="w-9 h-9 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#64748B] hover:text-[#2563EB] border border-[#CBD5E1] rounded-xl shadow-lg flex items-center justify-center transition active:scale-95"
           >
             {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
           </button>

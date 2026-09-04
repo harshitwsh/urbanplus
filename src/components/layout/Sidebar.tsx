@@ -2,77 +2,151 @@ import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { NavigationTab } from '../../types/urbanpulse';
 import { 
-  Activity, 
+  LayoutDashboard, 
   Map, 
   Layers, 
   Eye, 
-  AlertTriangle, 
+  Activity, 
   TrendingUp, 
-  Flame, 
-  Bus as BusIcon, 
+  Bus, 
   ShieldAlert, 
   CheckSquare, 
   BarChart3, 
   FileText, 
-  ShieldCheck, 
-  Cpu
+  Cpu, 
+  Settings,
+  HardHat,
+  Sparkles,
+  LogOut
 } from 'lucide-react';
 
 export const Sidebar: React.FC = () => {
-  const { activeTab, setActiveTab } = useApp();
+  const { activeTab, setActiveTab, userRole, setIsLoggedIn } = useApp();
 
-  const navItems: { id: NavigationTab; label: string; icon: React.FC<{ className?: string }> }[] = [
-    { id: 'command_center', label: 'Command Center', icon: Activity },
-    { id: 'map', label: 'Live GIS', icon: Map },
-    { id: 'fusion', label: 'Evidence Fusion', icon: Layers },
-    { id: 'vision', label: 'Edge Perception', icon: Eye },
-    { id: 'road', label: 'Road Intelligence', icon: AlertTriangle },
-    { id: 'traffic', label: 'Traffic Intelligence', icon: TrendingUp },
-    { id: 'hotspots', label: 'Hotspots', icon: Flame },
-    { id: 'incidents', label: 'Incidents', icon: ShieldAlert },
-    { id: 'fleet', label: 'Fleet', icon: BusIcon },
-    { id: 'actions', label: 'Action Center', icon: CheckSquare },
-    { id: 'analytics', label: 'Mobility', icon: BarChart3 },
-    { id: 'reports', label: 'Reports', icon: FileText },
-    { id: 'privacy', label: 'Privacy', icon: ShieldCheck },
-    { id: 'architecture', label: 'Architecture', icon: Cpu }
+  const navGroups: {
+    title: string;
+    items: { id: NavigationTab; label: string; icon: React.FC<{ className?: string }> }[];
+  }[] = [
+    {
+      title: 'COMMAND',
+      items: [
+        { id: 'command_center', label: 'Command Center', icon: LayoutDashboard },
+        { id: 'map', label: 'Live City Map', icon: Map },
+      ]
+    },
+    {
+      title: 'INTELLIGENCE',
+      items: [
+        { id: 'events', label: 'AI Events', icon: Eye },
+        { id: 'fusion', label: 'Evidence Fusion', icon: Layers },
+        { id: 'road', label: 'Road Intelligence', icon: Activity },
+        { id: 'traffic', label: 'Traffic Intelligence', icon: TrendingUp },
+        { id: 'incidents', label: 'Incident Center', icon: ShieldAlert },
+      ]
+    },
+    {
+      title: 'OPERATIONS',
+      items: [
+        { id: 'fleet', label: 'Fleet Operations', icon: Bus },
+        { id: 'actions', label: 'Action Center', icon: CheckSquare },
+        { id: 'field_officer', label: 'Field Officer App', icon: HardHat },
+      ]
+    },
+    {
+      title: 'INSIGHTS',
+      items: [
+        { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+        { id: 'reports', label: 'Reports', icon: FileText },
+      ]
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { id: 'architecture', label: 'AI Architecture', icon: Cpu },
+        { id: 'settings', label: 'Settings & Privacy', icon: Settings },
+      ]
+    }
   ];
 
   return (
-    <aside className="w-[220px] bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col justify-between shrink-0 select-none z-30 font-sans">
-      {/* Navigation Items */}
-      <div className="py-3 space-y-0.5">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeTab === item.id;
+    <aside className="w-56 bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col justify-between h-full select-none font-sans shrink-0">
+      <div className="p-3 space-y-4 overflow-y-auto">
+        {/* Brand */}
+        <div 
+          onClick={() => setActiveTab('landing')}
+          className="px-2 py-1.5 flex items-center space-x-2.5 cursor-pointer rounded hover:bg-[#F8FAFC] transition"
+        >
+          <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center font-bold text-white text-xs font-mono shadow-sm">
+            UP
+          </div>
+          <div>
+            <span className="font-bold text-sm text-[#172033] tracking-tight block">URBANPULSE</span>
+            <span className="text-[10px] text-[#64748B] font-mono block -mt-0.5">BEL • SIH26124</span>
+          </div>
+        </div>
 
-          return (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center px-4 py-2 text-xs font-medium transition group relative ${
-                isActive
-                  ? 'bg-[#EFF6FF] text-[#1D4ED8]'
-                  : 'text-[#475569] hover:text-[#172033] hover:bg-[#F8FAFC]'
-              }`}
-            >
-              {/* Left 2px Royal Blue Indicator */}
-              {isActive && (
-                <span className="absolute left-0 top-0 bottom-0 w-0.5 bg-[#2563EB]" />
-              )}
+        {/* Navigation Groups */}
+        <div className="space-y-4">
+          {navGroups.map((group) => (
+            <div key={group.title} className="space-y-1">
+              <span className="px-2 text-[10px] font-mono text-[#8290A3] uppercase font-bold tracking-wider block">
+                {group.title}
+              </span>
 
-              <div className="flex items-center space-x-3">
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2563EB]' : 'text-[#64748B] group-hover:text-[#475569]'}`} />
-                <span>{item.label}</span>
+              <div className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const isActive = activeTab === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => setActiveTab(item.id)}
+                      className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium transition flex items-center space-x-2.5 relative ${
+                        isActive
+                          ? 'bg-[#EFF6FF] text-[#1D4ED8] font-semibold'
+                          : 'text-[#475569] hover:bg-[#F8FAFC] hover:text-[#172033]'
+                      }`}
+                    >
+                      {isActive && (
+                        <div className="absolute left-0 top-1 bottom-1 w-0.5 bg-[#2563EB] rounded-r" />
+                      )}
+                      <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-[#2563EB]' : 'text-[#64748B]'}`} />
+                      <span className="truncate">{item.label}</span>
+                    </button>
+                  );
+                })}
               </div>
-            </button>
-          );
-        })}
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* Subdued Footer */}
-      <div className="p-4 border-t border-[#E2E8F0] text-[11px] font-mono text-[#8290A3]">
-        SIH26124 • DEMO MODE
+      {/* Bottom Profile Footer */}
+      <div className="p-3 border-t border-[#E2E8F0] bg-[#F8FAFC] space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <div className="flex items-center space-x-2 truncate">
+            <div className="w-7 h-7 rounded-full bg-[#2563EB] text-white flex items-center justify-center font-mono font-bold text-xs shrink-0">
+              TA
+            </div>
+            <div className="truncate">
+              <span className="font-semibold text-[#172033] block truncate text-[11px]">
+                {userRole.replace('_', ' ').toUpperCase()}
+              </span>
+              <span className="text-[10px] text-[#64748B] block truncate">Gurugram Smart City</span>
+            </div>
+          </div>
+
+          <button
+            onClick={() => {
+              setIsLoggedIn(false);
+              setActiveTab('landing');
+            }}
+            title="Sign Out"
+            className="p-1 text-[#8290A3] hover:text-[#DC4C5A] rounded"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+          </button>
+        </div>
       </div>
     </aside>
   );

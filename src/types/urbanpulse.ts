@@ -1,6 +1,10 @@
 export type NavigationTab = 
+  | 'landing'
+  | 'login'
+  | 'role_selection'
   | 'command_center'
   | 'map'
+  | 'events'
   | 'fusion'
   | 'vision'
   | 'road'
@@ -8,22 +12,24 @@ export type NavigationTab =
   | 'hotspots'
   | 'fleet'
   | 'incidents'
-  | 'analytics'
   | 'actions'
+  | 'field_officer'
+  | 'analytics'
   | 'reports'
   | 'privacy'
-  | 'architecture';
+  | 'architecture'
+  | 'settings';
 
 export type UserRole = 
   | 'transport_authority'
-  | 'traffic_operator'
-  | 'road_maintenance'
-  | 'security_reviewer';
+  | 'municipal_authority'
+  | 'field_officer'
+  | 'administrator';
 
 export type EventSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type IssueStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'VERIFIED';
-export type IncidentStatus = 'AWAITING_VERIFICATION' | 'VERIFIED' | 'REJECTED' | 'ESCALATED';
-export type DefectType = 'pothole' | 'waterlogging' | 'road_damage' | 'missing_divider' | 'missing_zebra' | 'damaged_sign' | 'infrastructure';
+export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED';
+export type IncidentStatus = 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'DISMISSED' | 'ESCALATED' | 'AWAITING_VERIFICATION' | 'REJECTED';
+export type DefectType = 'pothole' | 'waterlogging' | 'road_damage' | 'missing_divider' | 'missing_zebra' | 'damaged_sign' | 'infrastructure' | 'pedestrian_risk';
 
 export interface CameraHealth {
   front: boolean;
@@ -118,7 +124,7 @@ export interface TrafficHotspot {
 export interface Incident {
   id: string;
   code: string;
-  type: 'POTENTIAL_HIT_RUN' | 'RASH_DRIVING' | 'PEDESTRIAN_HAZARD' | 'ACCIDENT' | 'ROAD_HAZARD';
+  type: 'POTENTIAL_HIT_RUN' | 'RASH_DRIVING' | 'PEDESTRIAN_HAZARD' | 'ACCIDENT' | 'ROAD_HAZARD' | 'ROAD_OBSTRUCTION';
   title: string;
   vehicleType: string;
   plateNumber: string;
@@ -140,7 +146,7 @@ export interface Incident {
 export interface ActionItem {
   id: string;
   defectId: string;
-  code: string; // UP-10482
+  code: string; // UP-10482 / WO-58291
   title: string;
   location: string;
   lat: number;
@@ -150,7 +156,7 @@ export interface ActionItem {
   assignedDept: 'Road Maintenance' | 'Traffic Division' | 'Municipal Corp' | 'BEL Operations';
   slaHours: number;
   hoursElapsed: number;
-  status: 'NEW' | 'ASSIGNED' | 'INSPECTION' | 'RESOLVED';
+  status: 'NEW' | 'ASSIGNED' | 'INSPECTION' | 'IN_PROGRESS' | 'RESOLVED';
   createdAt: string;
   updatedAt: string;
   assignedTo?: string;
@@ -165,7 +171,7 @@ export interface BoundingBox {
   y: number;
   w: number;
   h: number;
-  color: string; // hex or Tailwind color name
+  color: string;
 }
 
 export interface DemoStep {
@@ -176,4 +182,9 @@ export interface DemoStep {
   actionLabel: string;
   busId?: string;
   defectId?: string;
+  impactMetrics?: {
+    detectionTimeMin: number;
+    manualInspectionAvoided: boolean;
+    observationsCount: number;
+  };
 }

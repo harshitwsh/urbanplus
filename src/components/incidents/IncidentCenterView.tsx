@@ -131,7 +131,7 @@ export const IncidentCenterView: React.FC = () => {
                 </button>
 
                 <button
-                  onClick={() => verifyIncident(selectedIncident.id, 'REJECTED')}
+                  onClick={() => verifyIncident(selectedIncident.id, 'DISMISSED')}
                   className="px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#526174] border border-[#CBD5E1] text-xs font-medium rounded transition flex items-center space-x-1"
                 >
                   <XCircle className="w-3.5 h-3.5" />

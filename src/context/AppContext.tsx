@@ -40,7 +40,7 @@ interface AppContextType {
   setIsLoggedIn: (loggedIn: boolean) => void;
   
   // Actions
-  verifyIncident: (id: string, action: 'VERIFIED' | 'REJECTED' | 'ESCALATED') => void;
+  verifyIncident: (id: string, action: 'VERIFIED' | 'DISMISSED' | 'ESCALATED') => void;
   updateActionStatus: (id: string, newStatus: ActionItem['status']) => void;
   advanceDemoStep: () => void;
   resetDemo: () => void;
@@ -86,7 +86,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => clearInterval(timer);
   }, [isDemoRunning]);
 
-  const verifyIncident = (id: string, action: 'VERIFIED' | 'REJECTED' | 'ESCALATED') => {
+  const verifyIncident = (id: string, action: 'VERIFIED' | 'DISMISSED' | 'ESCALATED') => {
     setIncidents(prev => prev.map(inc => {
       if (inc.id === id) {
         return {

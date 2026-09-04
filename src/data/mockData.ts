@@ -1,4 +1,4 @@
-import { Bus, BusRoute, RoadDefect, TrafficHotspot, Incident, ActionItem } from '../types/urbanpulse';
+import { Bus, BusRoute, RoadDefect, TrafficHotspot, Incident, ActionItem, DemoStep } from '../types/urbanpulse';
 
 // Center coordinate for map (Gurugram urban corridor)
 export const CITY_CENTER: [number, number] = [28.4595, 77.0266];
@@ -593,63 +593,111 @@ export const VEHICLE_DISTRIBUTION_DATA = [
   { name: 'Trucks & Commercial', count: 1550, percentage: 6, color: '#EF4444' },
 ];
 
-export const DEMO_PRESENTATION_STEPS = [
+export const DEMO_PRESENTATION_STEPS: DemoStep[] = [
   {
     step: 1,
-    title: 'Select Bus Sensing Node',
-    description: 'Inspect mobile AI bus node BUS-104 navigating Route 07 along Golf Course Road.',
-    targetTab: 'fleet' as const,
-    actionLabel: 'View BUS-104 Node',
+    title: 'Mobile Sensing Node Active',
+    description: 'BUS-104 moves along Route R-07 on Golf Course Road, streaming real-time edge telemetry.',
+    targetTab: 'fleet',
+    actionLabel: 'Track BUS-104 Node',
     busId: 'BUS-104'
   },
   {
     step: 2,
-    title: 'Launch Onboard Edge AI Vision',
-    description: 'Observe real-time camera inference running at 24 FPS with object & road anomaly detection on edge hardware.',
-    targetTab: 'vision' as const,
-    actionLabel: 'Open Edge AI Simulator'
+    title: 'Edge AI Optical Anomaly Detection',
+    description: 'Onboard computer vision model detects deep road pothole surface hazard at 24 FPS.',
+    targetTab: 'vision',
+    actionLabel: 'Inspect Vision Feed'
   },
   {
     step: 3,
-    title: 'Detect Road Hazard (Sighting #1)',
-    description: 'BUS-104 detects deep pothole at 10:42 AM (Confidence 82.4%) and transmits lightweight encrypted metadata packet.',
-    targetTab: 'map' as const,
-    actionLabel: 'Locate Defect on GIS Map',
+    title: 'Geo-Tagged AI Observation (94%)',
+    description: 'Lightweight encrypted metadata packet created (Lat: 28.4595, Lng: 77.0266, Confidence: 94.2%).',
+    targetTab: 'map',
+    actionLabel: 'View Map Geotag',
     defectId: 'DEF-10482'
   },
   {
     step: 4,
-    title: 'Multi-Pass Sighting Confirmation',
-    description: 'BUS-117 (11:07 AM) & BUS-131 (12:18 PM) independently pass and confirm the exact same GPS coordinates.',
-    targetTab: 'fusion' as const,
-    actionLabel: 'Open Evidence Fusion Center'
+    title: 'Second Fleet Vehicle Passes (BUS-117)',
+    description: 'BUS-117 navigates the same corridor 15 minutes later and captures Sighting #2.',
+    targetTab: 'fusion',
+    actionLabel: 'Open Evidence Fusion'
   },
   {
     step: 5,
-    title: 'Evidence Fusion Confidence Boost',
-    description: 'Multi-Pass Evidence Fusion clusters the 3 sightings into 1 verified issue, boosting confidence from 82.4% to 96.7%.',
-    targetTab: 'fusion' as const,
-    actionLabel: 'Inspect Fusion Matrix'
+    title: 'Spatial & Temporal Correlation Engine',
+    description: 'Multi-Pass Evidence Fusion identifies spatial proximity (Δd = 3.2m < 15.0m threshold).',
+    targetTab: 'fusion',
+    actionLabel: 'Examine Correlation'
   },
   {
     step: 6,
-    title: 'AI Traffic & Bottleneck Analysis',
-    description: 'Check how pothole UP-10482 caused a +14 min delay bottleneck at Golf Course Road Junction.',
-    targetTab: 'hotspots' as const,
-    actionLabel: 'View Traffic Hotspots'
+    title: 'Independent Confirmation (BUS-131)',
+    description: 'BUS-131 provides Sighting #3, eliminating false positive risk.',
+    targetTab: 'fusion',
+    actionLabel: 'View 3-Sighting Matrix'
   },
   {
     step: 7,
-    title: 'Automated Municipal Work Order',
-    description: 'System automatically generates Action Item #UP-10482 for Road Maintenance Dept with 24-hour SLA.',
-    targetTab: 'actions' as const,
-    actionLabel: 'Open Action Center'
+    title: 'System Creates Verified Urban Issue',
+    description: 'Bayesian evidence fusion escalates confidence to 96.7% for single physical pothole UP-10482.',
+    targetTab: 'events',
+    actionLabel: 'View Verified Event'
   },
   {
     step: 8,
-    title: 'Generate Government Audit Report',
-    description: 'Export print-ready PDF and CSV reports for BEL and City Transport Authority.',
-    targetTab: 'reports' as const,
-    actionLabel: 'View Executive Reports'
+    title: 'Automated Priority Engine Evaluation',
+    description: 'Evaluates corridor traffic volume (2,450 veh/hr), road class, and multi-vehicle risk.',
+    targetTab: 'hotspots',
+    actionLabel: 'Inspect Priority Score'
+  },
+  {
+    step: 9,
+    title: 'Priority Score Assigned: HIGH',
+    description: 'Priority score calculated automatically based on urban safety impact matrix.',
+    targetTab: 'events',
+    actionLabel: 'Review Priority'
+  },
+  {
+    step: 10,
+    title: 'Smart Automation Recommendation',
+    description: 'System recommends: "Create Maintenance Work Order & Dispatch Municipal Team 04".',
+    targetTab: 'actions',
+    actionLabel: 'Review Recommendation'
+  },
+  {
+    step: 11,
+    title: 'Authority Approval & Oversight',
+    description: 'Transport Authority reviews evidence packet and approves automated work order.',
+    targetTab: 'actions',
+    actionLabel: 'Approve Automation'
+  },
+  {
+    step: 12,
+    title: 'Work Order Auto-Generated (WO-58291)',
+    description: 'Work Order WO-58291 generated with 24-hour SLA response window.',
+    targetTab: 'actions',
+    actionLabel: 'View Work Order WO-58291'
+  },
+  {
+    step: 13,
+    title: 'Assigned to Maintenance Team 04',
+    description: 'Work order routed directly to Road Maintenance Field Officer mobile workflow.',
+    targetTab: 'field_officer',
+    actionLabel: 'Open Field Officer View'
+  },
+  {
+    step: 14,
+    title: 'Quantified Smart Automation Impact',
+    description: 'Detection time: 12 min • Manual inspection avoided: Yes • 3 Independent Observations • SLA Active.',
+    targetTab: 'analytics',
+    actionLabel: 'View Impact Analytics',
+    impactMetrics: {
+      detectionTimeMin: 12,
+      manualInspectionAvoided: true,
+      observationsCount: 3
+    }
   }
 ];
+

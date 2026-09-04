@@ -112,32 +112,38 @@ export const CesiumMapView: React.FC = () => {
     }, duration);
   }, []);
 
-  // Update Basemap Provider on Cesium Viewer
+  // Update Basemap Provider on Cesium Viewer (Clean 100% Free Esri & OpenStreetMap tiles without watermarks)
   const setViewerBasemap = useCallback((mode: 'STREET' | 'SATELLITE' | 'VOYAGER') => {
     const viewer = viewerRef.current;
     if (!viewer || viewer.isDestroyed()) return;
 
     viewer.imageryLayers.removeAll();
 
-    let provider: Cesium.ImageryProvider;
     if (mode === 'SATELLITE') {
-      provider = new Cesium.UrlTemplateImageryProvider({
+      const satProvider = new Cesium.UrlTemplateImageryProvider({
         url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-        credit: new Cesium.Credit('Tiles © Esri — Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community')
+        credit: new Cesium.Credit('Tiles © Esri — Source: Esri, Maxar, Earthstar Geographics')
       });
-    } else if (mode === 'VOYAGER') {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-        credit: new Cesium.Credit('© OpenStreetMap contributors, © CARTO')
-      });
-    } else {
-      provider = new Cesium.UrlTemplateImageryProvider({
-        url: 'https://a.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
-        credit: new Cesium.Credit('© OpenStreetMap contributors, © CARTO')
-      });
-    }
+      viewer.imageryLayers.addImageryProvider(satProvider);
 
-    viewer.imageryLayers.addImageryProvider(provider);
+      const labelProvider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',
+        credit: new Cesium.Credit('Tiles © Esri')
+      });
+      viewer.imageryLayers.addImageryProvider(labelProvider);
+    } else if (mode === 'VOYAGER') {
+      const topoProvider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}',
+        credit: new Cesium.Credit('Tiles © Esri — Esri, DeLorme, NAVTEQ, TomTom, MapmyIndia, © OpenStreetMap contributors')
+      });
+      viewer.imageryLayers.addImageryProvider(topoProvider);
+    } else {
+      const streetProvider = new Cesium.UrlTemplateImageryProvider({
+        url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+        credit: new Cesium.Credit('© OpenStreetMap contributors')
+      });
+      viewer.imageryLayers.addImageryProvider(streetProvider);
+    }
   }, []);
 
   // Update or Create the Animated Real GPS User Location Marker in Cesium

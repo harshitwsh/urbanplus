@@ -308,11 +308,10 @@ export const UrbanMap: React.FC = () => {
       attributionControl: true
     });
 
-    // Default Layer: CartoDB Voyager (Rich roads, street names, POIs, landmarks)
-    const baseTile = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    // Default Layer: OpenStreetMap Standard (Clean, free, visible roads, street names, POIs, landmarks)
+    const baseTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 19,
-      subdomains: 'abcd',
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(map);
 
     tileLayerRef.current = baseTile;
@@ -358,7 +357,7 @@ export const UrbanMap: React.FC = () => {
     };
   }, [startLiveLocationTracking]);
 
-  // Update Map Layer Tile Provider based on mapMode
+  // Update Map Layer Tile Provider based on mapMode (Zero API Key / Watermark Free)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -380,24 +379,21 @@ export const UrbanMap: React.FC = () => {
         attribution: 'Tiles &copy; Esri'
       }).addTo(map);
 
-      // Transparent Road & Place Labels Overlay
-      overlayTileLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager_only_labels/{z}/{x}/{y}{r}.png', {
+      // Transparent Road & Place Labels Overlay from Esri
+      overlayTileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
         maxZoom: 19,
-        subdomains: 'abcd',
         pane: 'markerPane'
       }).addTo(map);
     } else if (mapMode === 'URBAN_INTELLIGENCE') {
-      tileLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; CARTO Dark Matter'
+      tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 16,
+        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
       }).addTo(map);
     } else {
-      // STANDARD: OpenStreetMap / CartoDB Voyager with visible roads & POIs
-      tileLayerRef.current = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      // STANDARD: OpenStreetMap Standard with visible roads, street names, POIs
+      tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        subdomains: 'abcd',
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO'
+        attribution: '&copy; OpenStreetMap contributors'
       }).addTo(map);
     }
   }, [mapMode]);

@@ -333,18 +333,18 @@ export const UrbanMap: React.FC = () => {
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Create Leaflet Map Instance
+    // Create Leaflet Map Instance (Centered on user's real position if available)
+    const initCenter: [number, number] = userLocation ? [userLocation.lat, userLocation.lng] : [28.4595, 77.0266];
     const map = L.map(mapContainerRef.current, {
-      center: [28.4595, 77.0266],
-      zoom: 14,
+      center: initCenter,
+      zoom: userLocation ? 16 : 14,
       zoomControl: false,
-      attributionControl: true
+      attributionControl: false
     });
 
     // Default Layer: OpenStreetMap Standard (Clean, free, visible roads, street names, POIs, landmarks)
     const baseTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      maxZoom: 19
     }).addTo(map);
 
     tileLayerRef.current = baseTile;

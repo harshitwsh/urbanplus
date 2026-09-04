@@ -325,7 +325,10 @@ export const CesiumMapView: React.FC = () => {
         (Cesium as any).Ion.defaultAccessToken = '';
       }
 
+      const dummyCreditContainer = document.createElement('div');
       const viewer = new Cesium.Viewer(containerRef.current, {
+        creditContainer: dummyCreditContainer,
+        creditViewport: dummyCreditContainer,
         animation: false,
         timeline: false,
         baseLayerPicker: false,
@@ -343,12 +346,16 @@ export const CesiumMapView: React.FC = () => {
       viewerRef.current = viewer;
       setViewerBasemap('STREET');
 
-      // Initial viewpoint over Gurugram Corridor
+      // Initial viewpoint: User's real GPS position if available, otherwise city corridor
+      const initLat = userLocation ? userLocation.lat : 28.4595;
+      const initLng = userLocation ? userLocation.lng : 77.0266;
+      const initAlt = userLocation ? 1600 : 8500;
+
       viewer.camera.setView({
-        destination: Cesium.Cartesian3.fromDegrees(77.0266, 28.4595, 8500),
+        destination: Cesium.Cartesian3.fromDegrees(initLng, initLat, initAlt),
         orientation: {
           heading: Cesium.Math.toRadians(0),
-          pitch: Cesium.Math.toRadians(-60),
+          pitch: Cesium.Math.toRadians(-50),
           roll: 0.0
         }
       });
@@ -710,7 +717,7 @@ export const CesiumMapView: React.FC = () => {
       <div className="p-2.5 bg-[#FFFFFF] border-b border-[#E2E8F0] flex flex-wrap items-center justify-between gap-2 z-20 text-xs shadow-sm">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
-            <span className="font-bold text-[#172033] font-sans">Cesium 3D GIS Intelligence</span>
+            <span className="font-bold text-[#172033] font-sans">URBANPULSE 3D GIS INTELLIGENCE</span>
             <span className="text-[11px] text-[#64748B] hidden sm:inline">• Live Firestore GIS</span>
           </div>
 

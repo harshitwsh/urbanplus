@@ -89,12 +89,11 @@ export const ThreeDGlobeView: React.FC = () => {
       center: [28.4680, 77.0620],
       zoom: 13,
       zoomControl: false,
-      attributionControl: true
+      attributionControl: false
     });
 
     const tileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-      maxZoom: 19,
-      attribution: 'Esri World Imagery & OpenStreetMap'
+      maxZoom: 19
     }).addTo(map);
 
     mapInstanceRef.current = map;

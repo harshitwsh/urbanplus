@@ -50,14 +50,20 @@
   background-color: #F8FAFC !important;
 }
 
-.leaflet-control-attribution {
-  background-color: rgba(255, 255, 255, 0.9) !important;
-  color: #8290A3 !important;
-  font-size: 10px !important;
-}
-
-.leaflet-control-attribution a {
-  color: #2563EB !important;
+.leaflet-control-attribution,
+.cesium-widget-credits,
+.cesium-credit-textContainer,
+.cesium-credit-logoContainer,
+.cesium-credit-expand-link,
+.cesium-credit-render-container {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+  position: absolute !important;
+  left: -9999px !important;
 }
 
 /* Light Scrollbar */

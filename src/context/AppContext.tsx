@@ -125,15 +125,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Route Protection Guard
-  useEffect(() => {
-    const publicTabs: NavigationTab[] = ['landing', 'login', 'signup', 'forgot_password'];
-
-    if (!user && !isAuthenticated && !publicTabs.includes(activeTab)) {
-      setActiveTab('login');
-    }
-  }, [activeTab, user, isAuthenticated]);
-
   // Seed Firestore on startup if empty
   useEffect(() => {
     seedFirestoreIfEmpty().then((res) => {

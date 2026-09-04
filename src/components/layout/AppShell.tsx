@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
@@ -24,7 +24,8 @@ import { AIArchitectureView } from '../architecture/AIArchitectureView';
 import { SettingsView } from '../system/SettingsView';
 
 export const AppShell: React.FC = () => {
-  const { activeTab, isLoggedIn } = useApp();
+  const { activeTab } = useApp();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
 
   // Standalone full-screen pages
   if (activeTab === 'landing') {
@@ -78,15 +79,26 @@ export const AppShell: React.FC = () => {
     }
   };
 
+  const isMapTab = activeTab === 'map';
+
   return (
-    <div className="h-screen w-screen flex flex-col bg-[#F7F8FA] overflow-hidden font-sans select-none">
-      <Header />
-      <div className="flex-1 flex overflow-hidden relative">
-        <Sidebar />
-        <main className="flex-1 overflow-y-auto bg-[#F7F8FA] relative">
+    <div className="min-h-screen flex flex-col bg-[#F7F8FA] font-sans select-none">
+      <Header 
+        isMobileMenuOpen={isMobileMenuOpen}
+        onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+      />
+
+      <div className={`flex-1 flex relative ${isMapTab ? 'h-[calc(100vh-64px)] overflow-hidden' : 'min-h-[calc(100vh-64px)]'}`}>
+        <Sidebar 
+          isMobileOpen={isMobileMenuOpen}
+          onCloseMobile={() => setIsMobileMenuOpen(false)}
+        />
+
+        <main className={`flex-1 bg-[#F7F8FA] relative w-full ${isMapTab ? 'h-full overflow-hidden' : 'overflow-y-auto min-h-full pb-16'}`}>
           {renderTabContent()}
         </main>
       </div>
+
       <SimulationController />
     </div>
   );

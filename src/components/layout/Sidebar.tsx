@@ -16,11 +16,16 @@ import {
   Cpu, 
   Settings,
   HardHat,
-  Sparkles,
-  LogOut
+  LogOut,
+  X
 } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+  isMobileOpen?: boolean;
+  onCloseMobile?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile }) => {
   const { activeTab, setActiveTab, userRole, setIsLoggedIn } = useApp();
 
   const navGroups: {
@@ -68,21 +73,34 @@ export const Sidebar: React.FC = () => {
     }
   ];
 
-  return (
-    <aside className="w-56 bg-[#FFFFFF] border-r border-[#E2E8F0] flex flex-col justify-between h-full select-none font-sans shrink-0">
+  const handleSelectTab = (tab: NavigationTab) => {
+    setActiveTab(tab);
+    if (onCloseMobile) onCloseMobile();
+  };
+
+  const sidebarContent = (
+    <div className="flex flex-col justify-between h-full select-none font-sans bg-[#FFFFFF]">
       <div className="p-3 space-y-4 overflow-y-auto">
-        {/* Brand */}
-        <div 
-          onClick={() => setActiveTab('landing')}
-          className="px-2 py-1.5 flex items-center space-x-2.5 cursor-pointer rounded hover:bg-[#F8FAFC] transition"
-        >
-          <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center font-bold text-white text-xs font-mono shadow-sm">
-            UP
+        {/* Brand Header */}
+        <div className="flex items-center justify-between">
+          <div 
+            onClick={() => handleSelectTab('landing')}
+            className="px-2 py-1.5 flex items-center space-x-2.5 cursor-pointer rounded hover:bg-[#F8FAFC] transition"
+          >
+            <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center font-bold text-white text-xs font-mono shadow-sm">
+              UP
+            </div>
+            <div>
+              <span className="font-bold text-sm text-[#172033] tracking-tight block">URBANPULSE</span>
+              <span className="text-[10px] text-[#64748B] font-mono block -mt-0.5">BEL • SIH26124</span>
+            </div>
           </div>
-          <div>
-            <span className="font-bold text-sm text-[#172033] tracking-tight block">URBANPULSE</span>
-            <span className="text-[10px] text-[#64748B] font-mono block -mt-0.5">BEL • SIH26124</span>
-          </div>
+
+          {onCloseMobile && (
+            <button onClick={onCloseMobile} className="lg:hidden p-1 text-[#8290A3] hover:text-[#172033]">
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
 
         {/* Navigation Groups */}
@@ -100,7 +118,7 @@ export const Sidebar: React.FC = () => {
                   return (
                     <button
                       key={item.id}
-                      onClick={() => setActiveTab(item.id)}
+                      onClick={() => handleSelectTab(item.id)}
                       className={`w-full px-2.5 py-1.5 rounded-md text-xs font-medium transition flex items-center space-x-2.5 relative ${
                         isActive
                           ? 'bg-[#EFF6FF] text-[#1D4ED8] font-semibold'
@@ -139,7 +157,7 @@ export const Sidebar: React.FC = () => {
           <button
             onClick={() => {
               setIsLoggedIn(false);
-              setActiveTab('landing');
+              handleSelectTab('landing');
             }}
             title="Sign Out"
             className="p-1 text-[#8290A3] hover:text-[#DC4C5A] rounded"
@@ -148,6 +166,25 @@ export const Sidebar: React.FC = () => {
           </button>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-56 border-r border-[#E2E8F0] flex-col justify-between h-full shrink-0">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs" onClick={onCloseMobile} />
+          <div className="relative w-64 bg-[#FFFFFF] h-full shadow-2xl z-10">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };

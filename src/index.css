@@ -4,15 +4,15 @@
 
 @layer base {
   :root {
-    --bg-main: #F8FAFC;
+    --bg-main: #F7F8FA;
     --surface-main: #FFFFFF;
-    --surface-sec: #F1F5F9;
+    --surface-sec: #F1F4F7;
     --border-color: #E2E8F0;
   }
 
   html, body {
-    height: 100%;
-    overflow: hidden;
+    min-height: 100%;
+    overflow-x: hidden;
     background-color: var(--bg-main);
     color: #172033;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
@@ -62,12 +62,12 @@
 
 /* Light Scrollbar */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #F8FAFC;
+  background: #F7F8FA;
 }
 
 ::-webkit-scrollbar-thumb {

@@ -33,7 +33,7 @@ export class AIDetectionService {
       status: 'Pending Verification',
       severity: 'HIGH',
       boundingBoxes: [
-        { id: 'b1', label: 'Pothole (94%)', confidence: 0.94, x: 35, y: 45, w: 25, h: 20, color: '#D97706' }
+        { id: 'b1', label: 'Pothole (94%)', confidence: 0.94, x: 35, y: 68, w: 25, h: 20, color: '#D97706' }
       ],
       isDemo: true
     },
@@ -51,7 +51,7 @@ export class AIDetectionService {
       status: 'Verified',
       severity: 'CRITICAL',
       boundingBoxes: [
-        { id: 'b2', label: 'Waterlogging (92%)', confidence: 0.92, x: 20, y: 55, w: 60, h: 30, color: '#DC4C5A' }
+        { id: 'b2', label: 'Waterlogging (92%)', confidence: 0.92, x: 20, y: 62, w: 60, h: 25, color: '#DC4C5A' }
       ],
       isDemo: true
     },
@@ -69,7 +69,7 @@ export class AIDetectionService {
       status: 'Pending Verification',
       severity: 'MEDIUM',
       boundingBoxes: [
-        { id: 'b3', label: 'Asphalt Crack (88%)', confidence: 0.88, x: 40, y: 50, w: 30, h: 25, color: '#D97706' }
+        { id: 'b3', label: 'Asphalt Crack (88%)', confidence: 0.88, x: 40, y: 65, w: 30, h: 22, color: '#D97706' }
       ],
       isDemo: true
     }
@@ -97,7 +97,7 @@ export class AIDetectionService {
       status: 'Pending Verification',
       severity: 'HIGH',
       boundingBoxes: [
-        { id: 'bnew', label: 'Surface Pothole (91%)', confidence: 0.91, x: 30, y: 40, w: 35, h: 25, color: '#D97706' }
+        { id: 'bnew', label: 'Surface Pothole (91%)', confidence: 0.91, x: 30, y: 66, w: 35, h: 22, color: '#D97706' }
       ],
       isDemo: true
     };

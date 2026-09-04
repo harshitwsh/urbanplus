@@ -183,7 +183,7 @@ export const MobileCityEyesView: React.FC = () => {
             <div className="absolute inset-0 border-2 border-emerald-500/40 pointer-events-none" />
 
             {/* AI Bounding Box Simulation */}
-            <div className="absolute top-20 left-28 w-32 h-20 border-2 border-[#F59E0B] bg-[#F59E0B]/20 rounded p-1 font-mono text-[10px] text-white">
+            <div className="absolute bottom-10 left-32 w-36 h-20 border-2 border-[#F59E0B] bg-[#F59E0B]/20 rounded p-1 font-mono text-[10px] text-white">
               <span className="bg-[#F59E0B] text-black px-1 font-bold rounded">Pothole (96%)</span>
             </div>
 

@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useApp } from '../../context/AppContext';
-import { Mail, CheckCircle2, AlertCircle, RefreshCw, Send, LogOut, ArrowRight, ShieldCheck } from 'lucide-react';
+import { 
+  Mail, 
+  CheckCircle2, 
+  AlertCircle, 
+  RefreshCw, 
+  Send, 
+  LogOut, 
+  ShieldCheck, 
+  Clock, 
+  Inbox, 
+  AlertTriangle 
+} from 'lucide-react';
 
 export const EmailVerificationView: React.FC = () => {
   const { user, sendVerificationEmail, checkEmailVerification, logout } = useAuth();
@@ -9,11 +20,30 @@ export const EmailVerificationView: React.FC = () => {
 
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [isResending, setIsResending] = useState<boolean>(false);
+  const [cooldown, setCooldown] = useState<number>(0);
   const [message, setMessage] = useState<{ type: 'success' | 'error' | 'info'; text: string } | null>({
     type: 'info',
-    text: 'Account created! Please check your email inbox and click the verification link.'
+    text: "We've sent a verification link to your email. Please check your Inbox and Spam folder."
   });
 
+  // 60-second cooldown timer countdown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+
+    const timer = setInterval(() => {
+      setCooldown((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // "I've Verified My Email" button handler
   const handleCheckVerified = async () => {
     setIsChecking(true);
     setMessage(null);
@@ -30,42 +60,59 @@ export const EmailVerificationView: React.FC = () => {
       } else {
         setMessage({
           type: 'error',
-          text: 'Email not verified yet. Please click the link in the email sent by Firebase and try again.'
+          text: 'Your email is not verified yet. Please click the verification link in your email.'
         });
       }
     } catch (err: any) {
       console.error('Error checking verification:', err);
+      let errorText = 'Could not verify status. Please click the link in your email and try again.';
+      if (err.code === 'auth/network-request-failed') {
+        errorText = 'Network connection failed. Please check your internet connection.';
+      } else if (err.message) {
+        errorText = err.message;
+      }
       setMessage({
         type: 'error',
-        text: err.message || 'Could not verify status. Please try again.'
+        text: errorText
       });
     } finally {
       setIsChecking(false);
     }
   };
 
+  // "Resend Verification Email" button handler with 60-second cooldown
   const handleResend = async () => {
+    if (cooldown > 0 || isResending) return;
+
     setIsResending(true);
     setMessage(null);
+
     try {
       await sendVerificationEmail();
+      setCooldown(60); // Start 60-second cooldown
       setMessage({
         type: 'success',
-        text: 'A fresh verification email has been sent. Please check your inbox and spam folder.'
+        text: 'A fresh verification email has been sent. Please check your Inbox and Spam folder.'
       });
     } catch (err: any) {
       console.error('Error resending email:', err);
+      let errorText = 'Failed to resend verification email.';
+
       if (err.code === 'auth/too-many-requests') {
-        setMessage({
-          type: 'error',
-          text: 'Too many requests sent recently. Please wait a moment before trying again.'
-        });
-      } else {
-        setMessage({
-          type: 'error',
-          text: err.message || 'Failed to resend verification email.'
-        });
+        errorText = 'Too many requests sent recently. Please wait a few moments before requesting another email.';
+        setCooldown(60);
+      } else if (err.code === 'auth/network-request-failed') {
+        errorText = 'Network connection error. Please check your internet connection.';
+      } else if (err.code === 'auth/invalid-email') {
+        errorText = 'The registered email address is invalid.';
+      } else if (err.message) {
+        errorText = err.message;
       }
+
+      setMessage({
+        type: 'error',
+        text: errorText
+      });
     } finally {
       setIsResending(false);
     }
@@ -75,6 +122,8 @@ export const EmailVerificationView: React.FC = () => {
     await logout();
     setActiveTab('login');
   };
+
+  const userEmail = user?.email || 'your registered email';
 
   return (
     <div className="min-h-screen bg-[#F7F8FA] text-[#172033] flex flex-col justify-between p-6 md:p-12 font-sans select-none">
@@ -86,7 +135,7 @@ export const EmailVerificationView: React.FC = () => {
           </div>
           <div>
             <h1 className="font-bold text-base text-[#172033]">URBANPULSE</h1>
-            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • AUTHENTICATION VERIFICATION</p>
+            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • FIREBASE AUTHENTICATION</p>
           </div>
         </div>
 
@@ -102,7 +151,7 @@ export const EmailVerificationView: React.FC = () => {
       {/* Main Verification Card */}
       <div className="max-w-md mx-auto w-full my-auto">
         <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl text-center">
-          {/* Email Icon Badge */}
+          {/* Email Icon Animation */}
           <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] mx-auto flex items-center justify-center text-[#2563EB] shadow-xs">
             <Mail className="w-8 h-8 animate-bounce" />
           </div>
@@ -112,16 +161,27 @@ export const EmailVerificationView: React.FC = () => {
               Verify Your Email
             </h2>
             <p className="text-xs text-[#64748B] leading-relaxed">
-              We have sent a verification email to:
+              We've sent a verification link to your email address:
             </p>
             <div className="p-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg font-mono text-xs font-bold text-[#2563EB] truncate">
-              {user?.email || 'your registered email'}
+              {userEmail}
             </div>
           </div>
 
-          {/* Alert Message Box */}
+          {/* Inbox & Spam Instructions */}
+          <div className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl p-3 text-[11px] text-[#64748B] space-y-1.5 text-left">
+            <div className="flex items-center space-x-1.5 font-semibold text-[#172033]">
+              <Inbox className="w-3.5 h-3.5 text-[#2563EB]" />
+              <span>Next Steps:</span>
+            </div>
+            <p>1. Open your email inbox and click the verification link from Firebase.</p>
+            <p>2. If you don't see it in your primary inbox, please check your <b>Spam</b> or <b>Junk</b> folder.</p>
+            <p>3. Once clicked, return here and tap <b>"I've Verified My Email"</b> below.</p>
+          </div>
+
+          {/* Dynamic Alert Message Box */}
           {message && (
-            <div className={`p-3.5 rounded-xl text-xs flex items-start space-x-2.5 text-left ${
+            <div className={`p-3.5 rounded-xl text-xs flex items-start space-x-2.5 text-left transition-all ${
               message.type === 'success' 
                 ? 'bg-[#ECFDF5] border border-[#A7F3D0] text-[#059669]' 
                 : message.type === 'error'
@@ -135,28 +195,41 @@ export const EmailVerificationView: React.FC = () => {
               ) : (
                 <ShieldCheck className="w-4 h-4 shrink-0 mt-0.5" />
               )}
-              <span className="leading-relaxed">{message.text}</span>
+              <span className="leading-relaxed font-medium">{message.text}</span>
             </div>
           )}
 
           {/* Action Buttons */}
           <div className="space-y-3 font-sans">
+            {/* Primary Action: I've Verified My Email */}
             <button
               onClick={handleCheckVerified}
               disabled={isChecking}
               className="w-full py-2.5 bg-[#2563EB] hover:bg-blue-700 disabled:opacity-60 text-white text-xs font-semibold rounded-lg transition flex items-center justify-center space-x-2 shadow-sm"
             >
               <RefreshCw className={`w-4 h-4 ${isChecking ? 'animate-spin' : ''}`} />
-              <span>{isChecking ? 'Checking Verification...' : "I've Verified My Email"}</span>
+              <span>{isChecking ? 'Verifying with Firebase...' : "I've Verified My Email"}</span>
             </button>
 
+            {/* Secondary Action: Resend Verification Email (with 60s cooldown) */}
             <button
               onClick={handleResend}
-              disabled={isResending}
-              className="w-full py-2.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] disabled:opacity-60 text-[#172033] border border-[#CBD5E1] text-xs font-medium rounded-lg transition flex items-center justify-center space-x-2 shadow-xs"
+              disabled={isResending || cooldown > 0}
+              className={`w-full py-2.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] disabled:opacity-60 text-[#172033] border border-[#CBD5E1] text-xs font-medium rounded-lg transition flex items-center justify-center space-x-2 shadow-xs ${
+                cooldown > 0 ? 'cursor-not-allowed text-[#94A3B8]' : ''
+              }`}
             >
-              <Send className="w-3.5 h-3.5 text-[#2563EB]" />
-              <span>{isResending ? 'Sending Email...' : 'Resend Verification Email'}</span>
+              {cooldown > 0 ? (
+                <>
+                  <Clock className="w-3.5 h-3.5 text-[#94A3B8] animate-spin" />
+                  <span>Resend in {cooldown}s</span>
+                </>
+              ) : (
+                <>
+                  <Send className="w-3.5 h-3.5 text-[#2563EB]" />
+                  <span>{isResending ? 'Sending Email...' : 'Resend Verification Email'}</span>
+                </>
+              )}
             </button>
           </div>
 

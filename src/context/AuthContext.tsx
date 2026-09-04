@@ -185,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Email / Password Signup
+  // Email / Password Signup with Immediate Verification Email Dispatch
   const signup = async (
     email: string, 
     password: string, 
@@ -196,21 +196,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setLoading(true);
     try {
       await applyPersistence(staySignedIn);
-      const cred = await createUserWithEmailAndPassword(auth, email.trim(), password);
       
-      // Update displayName with user's Full Name
+      // 1. Create account in Firebase Authentication
+      const userCredential = await createUserWithEmailAndPassword(
+        auth, 
+        email.trim(), 
+        password
+      );
+      const newUser = userCredential.user;
+
+      // 2. Immediately update profile with user's Full Name
       if (fullName.trim()) {
-        await updateProfile(cred.user, { displayName: fullName.trim() }).catch(() => {});
+        await updateProfile(newUser, {
+          displayName: fullName.trim()
+        });
       }
 
-      // Send real email verification
-      await sendEmailVerification(cred.user).catch((e) => {
-        console.warn('Verification email dispatch warning:', e);
-      });
+      // 3. Immediately send real Firebase email verification
+      await sendEmailVerification(newUser);
 
-      setUser(cred.user);
-      await syncUserProfile(cred.user, fullName.trim(), organization.trim());
-      return cred.user;
+      // 4. Create Firestore user document (without password, emailVerified: false)
+      await syncUserProfile(newUser, fullName.trim(), organization.trim());
+
+      setUser(newUser);
+      return newUser;
     } finally {
       setLoading(false);
     }
@@ -232,22 +241,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Send / Resend Email Verification
+  // Send / Resend Real Email Verification
   const sendVerificationEmail = async (): Promise<void> => {
-    if (!auth.currentUser) {
-      throw new Error('No user is currently signed in to receive verification email.');
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No user is currently signed in to receive a verification email.');
     }
-    await sendEmailVerification(auth.currentUser);
+    await sendEmailVerification(currentUser);
   };
 
   // Check / Reload Email Verification Status
   const checkEmailVerification = async (): Promise<boolean> => {
-    if (!auth.currentUser) return false;
-    await reload(auth.currentUser);
+    const currentUser = auth.currentUser;
+    if (!currentUser) return false;
+    
+    // Reload user from Firebase Auth servers
+    await reload(currentUser);
     const refreshedUser = auth.currentUser;
     setUser(refreshedUser);
     
-    if (refreshedUser.emailVerified) {
+    if (refreshedUser && refreshedUser.emailVerified) {
+      // Update Firestore user document with emailVerified: true
       const userDocRef = doc(db, 'users', refreshedUser.uid);
       await updateDoc(userDocRef, {
         emailVerified: true,

@@ -31,11 +31,11 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
     return 'LOGIN';
   });
 
-  const [email, setEmail] = useState<string>('transport.authority@urbanpulse.demo');
-  const [password, setPassword] = useState<string>('password123');
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState<string>('');
   const [confirmPassword, setConfirmPassword] = useState<string>('');
   const [fullName, setFullName] = useState<string>('');
-  const [organization, setOrganization] = useState<string>('Gurugram Metropolitan Development Authority');
+  const [organization, setOrganization] = useState<string>('');
   const [staySignedIn, setStaySignedIn] = useState<boolean>(true);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);

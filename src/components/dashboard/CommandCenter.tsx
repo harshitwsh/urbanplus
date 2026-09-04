@@ -75,8 +75,8 @@ export const CommandCenter: React.FC = () => {
           )}
         </div>
 
-        {/* Right Intelligence Panel */}
-        <div className="w-80 md:w-96 bg-[#FFFFFF] flex flex-col justify-between overflow-y-auto shrink-0 z-10 font-sans border-l border-[#E2E8F0]">
+        {/* Right Intelligence Panel (Hidden on mobile/tablet, shown on desktop lg:flex) */}
+        <div className="hidden lg:flex w-80 lg:w-96 bg-[#FFFFFF] flex-col justify-between overflow-y-auto shrink-0 z-10 font-sans border-l border-[#E2E8F0]">
           <div className="p-4 space-y-4">
             {/* Live City Intelligence Telemetry Panel */}
             <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-3 rounded-xl space-y-2">

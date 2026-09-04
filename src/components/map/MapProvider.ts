@@ -1,10 +1,12 @@
+export type MapEngineType = 'LEAFLET_CARTODB' | 'CESIUM_3D' | 'GOOGLE_SATELLITE';
 export type MapMode = 'CITY' | 'SATELLITE' | 'TERRAIN' | 'AI_INTELLIGENCE';
 
 export interface MapProviderConfig {
   googleMapsApiKey?: string;
   cesiumIonToken?: string;
-  isGoogle3DTilesEnabled: boolean;
-  activeMode: MapMode;
+  activeEngine: MapEngineType;
+  isGoogleConfigured: boolean;
+  isCesiumConfigured: boolean;
 }
 
 export class MapProviderManager {
@@ -19,8 +21,9 @@ export class MapProviderManager {
     this.config = {
       googleMapsApiKey: googleKey,
       cesiumIonToken: cesiumToken,
-      isGoogle3DTilesEnabled: Boolean(googleKey && googleKey.trim().length > 0),
-      activeMode: 'CITY'
+      activeEngine: 'LEAFLET_CARTODB',
+      isGoogleConfigured: Boolean(googleKey && googleKey.trim().length > 0),
+      isCesiumConfigured: Boolean(cesiumToken && cesiumToken.trim().length > 0)
     };
   }
 
@@ -36,10 +39,10 @@ export class MapProviderManager {
   }
 
   public isGoogleKeyConfigured(): boolean {
-    return this.config.isGoogle3DTilesEnabled;
+    return this.config.isGoogleConfigured;
   }
 
-  public setMode(mode: MapMode): void {
-    this.config.activeMode = mode;
+  public setEngine(engine: MapEngineType): void {
+    this.config.activeEngine = engine;
   }
 }

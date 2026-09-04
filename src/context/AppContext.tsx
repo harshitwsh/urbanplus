@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import { 
   NavigationTab, 
   UserRole, 
@@ -17,6 +17,8 @@ import {
   PRIMARY_FUSED_DEFECT,
   DEMO_PRESENTATION_STEPS
 } from '../data/mockData';
+import { FleetSimulationEngine } from '../services/FleetSimulationEngine';
+import { AuthProviderService } from '../services/AuthProvider';
 
 interface AppContextType {
   activeTab: NavigationTab;
@@ -62,9 +64,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   
   const [demoStep, setDemoStep] = useState<number>(1);
   const [isDemoRunning, setIsDemoRunning] = useState<boolean>(false);
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(true);
+  const [isLoggedIn, setIsLoggedIn] = useState<boolean>(() => Boolean(AuthProviderService.getSession()));
 
-  // Auto-advance Demo step player when demo mode is active
+  const fleetEngineRef = useRef<FleetSimulationEngine>(new FleetSimulationEngine(MOCK_BUSES));
+
+  // Route Protection Guard
+  useEffect(() => {
+    const protectedTabs: NavigationTab[] = [
+      'command_center', 'map', 'events', 'fusion', 'road', 'traffic', 
+      'hotspots', 'fleet', 'incidents', 'actions', 'field_officer', 
+      'analytics', 'reports', 'architecture', 'settings'
+    ];
+
+    if (!isLoggedIn && protectedTabs.includes(activeTab)) {
+      setActiveTab('login');
+    }
+  }, [activeTab, isLoggedIn]);
+
+  // Real Fleet Simulation Interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const updatedBuses = fleetEngineRef.current.stepSimulation();
+      setBuses([...updatedBuses]);
+    }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-advance Demo Step Player
   useEffect(() => {
     let timer: NodeJS.Timeout;
     if (isDemoRunning) {
@@ -103,45 +129,50 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const updateActionStatus = (id: string, newStatus: ActionItem['status']) => {
     setActionItems(prev => prev.map(item => {
       if (item.id === id) {
-        return {
+        const updated = {
           ...item,
           status: newStatus,
           updatedAt: new Date().toISOString()
         };
+        
+        // Synchronize state with central roadDefects
+        setRoadDefects(defs => defs.map(def => {
+          if (def.code === item.code || def.id === item.defectId) {
+            return {
+              ...def,
+              status: newStatus === 'RESOLVED' ? 'RESOLVED' : newStatus === 'INSPECTION' || newStatus === 'IN_PROGRESS' ? 'IN_PROGRESS' : 'VERIFIED'
+            };
+          }
+          return def;
+        }));
+
+        return updated;
       }
       return item;
     }));
   };
 
   const advanceDemoStep = () => {
-    const nextStep = demoStep >= DEMO_PRESENTATION_STEPS.length ? 1 : demoStep + 1;
-    setDemoStep(nextStep);
-    const stepConfig = DEMO_PRESENTATION_STEPS[nextStep - 1];
-    if (stepConfig) {
-      setActiveTab(stepConfig.targetTab);
-      if (stepConfig.busId) {
-        const found = buses.find(b => b.id === stepConfig.busId);
-        if (found) setSelectedBus(found);
+    setDemoStep(prev => {
+      const nextStep = prev >= DEMO_PRESENTATION_STEPS.length ? 1 : prev + 1;
+      const stepConfig = DEMO_PRESENTATION_STEPS[nextStep - 1];
+      if (stepConfig) {
+        setActiveTab(stepConfig.targetTab);
       }
-      if (stepConfig.defectId) {
-        const foundDef = roadDefects.find(d => d.id === stepConfig.defectId);
-        if (foundDef) setSelectedDefect(foundDef);
-      }
-    }
+      return nextStep;
+    });
   };
 
   const resetDemo = () => {
     setDemoStep(1);
     setIsDemoRunning(false);
     setActiveTab('command_center');
-    setSelectedDefect(PRIMARY_FUSED_DEFECT);
   };
 
   const addSyntheticDefect = (newDef: Partial<RoadDefect>) => {
-    const id = `DEF-${Math.floor(10000 + Math.random() * 90000)}`;
     const fullDefect: RoadDefect = {
-      id,
-      code: `UP-${id.split('-')[1]}`,
+      id: `DEF-${Math.floor(10000 + Math.random() * 90000)}`,
+      code: `UP-${Math.floor(10000 + Math.random() * 90000)}`,
       type: newDef.type || 'pothole',
       title: newDef.title || 'New Edge Detected Hazard',
       description: newDef.description || 'Automatically captured by mobile bus camera node.',
@@ -204,6 +235,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
 export const useApp = () => {
   const context = useContext(AppContext);
-  if (!context) throw new Error('useApp must be used within an AppProvider');
+  if (!context) {
+    throw new Error('useApp must be used within an AppProvider');
+  }
   return context;
 };

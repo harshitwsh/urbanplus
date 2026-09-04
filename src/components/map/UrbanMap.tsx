@@ -338,13 +338,17 @@ export const UrbanMap: React.FC = () => {
     const map = L.map(mapContainerRef.current, {
       center: initCenter,
       zoom: userLocation ? 16 : 14,
+      minZoom: 10,
+      maxZoom: 19,
       zoomControl: false,
       attributionControl: false
     });
 
     // Default Layer: OpenStreetMap Standard (Clean, free, visible roads, street names, POIs, landmarks)
     const baseTile = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19
+      minZoom: 10,
+      maxZoom: 19,
+      noWrap: true
     }).addTo(map);
 
     tileLayerRef.current = baseTile;
@@ -439,26 +443,36 @@ export const UrbanMap: React.FC = () => {
 
     if (mapMode === 'SATELLITE') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
+        minZoom: 10,
+        maxZoom: 19,
+        noWrap: true
       }).addTo(map);
     } else if (mapMode === 'HYBRID') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
+        minZoom: 10,
+        maxZoom: 19,
+        noWrap: true
       }).addTo(map);
 
       // Transparent Road & Place Labels Overlay from Esri
       overlayTileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', {
+        minZoom: 10,
         maxZoom: 19,
+        noWrap: true,
         pane: 'markerPane'
       }).addTo(map);
     } else if (mapMode === 'URBAN_INTELLIGENCE') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 19
+        minZoom: 10,
+        maxZoom: 19,
+        noWrap: true
       }).addTo(map);
     } else {
       // STANDARD: OpenStreetMap Standard with visible roads, street names, POIs
       tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19
+        minZoom: 10,
+        maxZoom: 19,
+        noWrap: true
       }).addTo(map);
     }
     
@@ -640,10 +654,11 @@ export const UrbanMap: React.FC = () => {
             onClick={() => {
               startLiveLocationTracking(true);
             }}
-            className="p-1.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#2563EB] border border-[#CBD5E1] rounded shadow-xs transition"
-            title="Re-query Browser Live GPS"
+            className="px-2.5 py-1 bg-[#2563EB] hover:bg-blue-700 text-white font-bold border border-[#2563EB] rounded text-[11px] font-mono shadow-xs transition flex items-center space-x-1"
+            title="Re-query Hardware GPS & Center Map"
           >
-            <Crosshair className="w-4 h-4" />
+            <Crosshair className="w-3.5 h-3.5 animate-pulse" />
+            <span>Locate Me</span>
           </button>
         </div>
       </div>

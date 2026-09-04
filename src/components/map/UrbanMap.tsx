@@ -47,6 +47,7 @@ interface UserLocation {
 
 type LocationStatus = 
   | 'GPS Connected' 
+  | 'GPS Calibrated'
   | 'Requesting Location' 
   | 'Location Permission Denied' 
   | 'Location Unavailable' 
@@ -86,11 +87,24 @@ export const UrbanMap: React.FC = () => {
   const [activeInspectorDefect, setActiveInspectorDefect] = useState<RoadDefect | null>(selectedDefect || roadDefects[0]);
   
   // Real GPS Geolocation States
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(() => {
+    try {
+      const saved = localStorage.getItem('urbanpulse_user_location');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('Idle');
   const [locationToast, setLocationToast] = useState<string | null>(null);
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [showGPSModal, setShowGPSModal] = useState<boolean>(false);
+  const [isPinningMode, setIsPinningMode] = useState<boolean>(false);
+  const isPinningModeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isPinningModeRef.current = isPinningMode;
+  }, [isPinningMode]);
 
   // Real Geocoding Search States (OpenStreetMap Nominatim)
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -163,12 +177,12 @@ export const UrbanMap: React.FC = () => {
       userCircleRef.current = null;
     }
 
-    // Animated Custom User Marker
+    // Animated Custom User Marker (Draggable for precise calibration)
     const userHtml = `
-      <div class="relative flex items-center justify-center" style="width:36px; height:36px;">
+      <div class="relative flex items-center justify-center cursor-grab active:cursor-grabbing" style="width:36px; height:36px;">
         <div class="gps-radar-wave-1"></div>
         <div class="gps-radar-wave-2"></div>
-        <div class="relative z-10 w-4.5 h-4.5 rounded-full bg-[#2563EB] border-[3px] border-white shadow-[0_0_12px_rgba(37,99,235,0.8)] flex items-center justify-center">
+        <div class="relative z-10 w-4.5 h-4.5 rounded-full bg-[#2563EB] border-[3px] border-white shadow-[0_0_14px_rgba(37,99,235,0.9)] flex items-center justify-center">
           <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
         </div>
       </div>
@@ -187,15 +201,33 @@ export const UrbanMap: React.FC = () => {
     } else {
       userMarkerRef.current = L.marker(latLng, { 
         icon: userIcon, 
+        draggable: true,
         zIndexOffset: 1000 
       }).addTo(map);
 
+      userMarkerRef.current.on('dragend', (e: any) => {
+        const newPos = e.target.getLatLng();
+        const calibratedLoc: UserLocation = {
+          lat: newPos.lat,
+          lng: newPos.lng,
+          accuracy: 5,
+          altitude: null,
+          speed: null,
+          heading: null,
+          timestamp: new Date().toLocaleTimeString('en-IN')
+        };
+        setUserLocation(calibratedLoc);
+        setLocationStatus('GPS Calibrated');
+        try { localStorage.setItem('urbanpulse_user_location', JSON.stringify(calibratedLoc)); } catch {}
+        showToast(`📍 Location manually pinned to Lat: ${newPos.lat.toFixed(5)}, Lng: ${newPos.lng.toFixed(5)}`);
+      });
+
       userMarkerRef.current.bindTooltip(
-        `<b>You are here (Live GPS)</b><br/>Lat: ${loc.lat.toFixed(5)}<br/>Lng: ${loc.lng.toFixed(5)}<br/>Accuracy: ±${loc.accuracy}m`,
+        `<b>You are here (Drag to adjust)</b><br/>Lat: ${loc.lat.toFixed(5)}<br/>Lng: ${loc.lng.toFixed(5)}<br/>Accuracy: ±${loc.accuracy}m`,
         { permanent: false, direction: 'top', offset: [0, -10] }
       );
     }
-  }, [layers.gpsAccuracy]);
+  }, [layers.gpsAccuracy, showToast]);
 
   // Geolocation Handlers
   const handleGeoSuccess = useCallback((position: GeolocationPosition, autoCenter = false) => {
@@ -214,6 +246,7 @@ export const UrbanMap: React.FC = () => {
     setLocationStatus('GPS Connected');
     setIsLocating(false);
     setShowGPSModal(false);
+    try { localStorage.setItem('urbanpulse_user_location', JSON.stringify(loc)); } catch {}
 
     updateUserGPSVisuals(loc);
 
@@ -331,6 +364,27 @@ export const UrbanMap: React.FC = () => {
       roadCoveragePolylinesRef.current.push(poly);
     });
 
+    // Enable map click for manual location pinning
+    map.on('click', (e: L.LeafletMouseEvent) => {
+      if (isPinningModeRef.current) {
+        const calibratedLoc: UserLocation = {
+          lat: e.latlng.lat,
+          lng: e.latlng.lng,
+          accuracy: 5,
+          altitude: null,
+          speed: null,
+          heading: null,
+          timestamp: new Date().toLocaleTimeString('en-IN')
+        };
+        setUserLocation(calibratedLoc);
+        setLocationStatus('GPS Calibrated');
+        try { localStorage.setItem('urbanpulse_user_location', JSON.stringify(calibratedLoc)); } catch {}
+        updateUserGPSVisuals(calibratedLoc);
+        setIsPinningMode(false);
+        showToast(`📍 Exact location set to: Lat ${e.latlng.lat.toFixed(5)}, Lng ${e.latlng.lng.toFixed(5)}`);
+      }
+    });
+
     // Check GPS Permissions
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'geolocation' as PermissionName })
@@ -355,7 +409,7 @@ export const UrbanMap: React.FC = () => {
       map.remove();
       mapInstanceRef.current = null;
     };
-  }, [startLiveLocationTracking]);
+  }, [startLiveLocationTracking, updateUserGPSVisuals, showToast]);
 
   // Update Map Layer Tile Provider based on mapMode (Zero API Key / Watermark Free)
   useEffect(() => {
@@ -535,17 +589,46 @@ export const UrbanMap: React.FC = () => {
             ))}
           </div>
 
-          {/* Locate Me */}
+          {/* GPS Accuracy Status Badge */}
+          {userLocation && (
+            <div className={`hidden sm:flex items-center space-x-1 px-2 py-1 rounded border text-[11px] font-mono ${
+              userLocation.accuracy <= 50 
+                ? 'bg-[#ECFDF5] text-[#059669] border-[#A7F3D0]' 
+                : 'bg-[#EFF6FF] text-[#2563EB] border-[#BFDBFE]'
+            }`}>
+              <Navigation className="w-3 h-3 animate-spin shrink-0" />
+              <span>{userLocation.accuracy <= 50 ? `±${userLocation.accuracy}m GPS` : `±${userLocation.accuracy}m Approx`}</span>
+            </div>
+          )}
+
+          {/* Adjust / Calibrate Location Pin */}
           <button
             onClick={() => {
-              if (userLocation && mapInstanceRef.current) {
-                mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 16);
-              } else {
-                startLiveLocationTracking(true);
-              }
+              setIsPinningMode((prev) => !prev);
+              showToast(
+                !isPinningMode 
+                  ? '📍 PINNING ACTIVE: Click anywhere on the map or drag your blue location marker to set your exact location.' 
+                  : 'Pin mode canceled.'
+              );
+            }}
+            className={`px-2.5 py-1 border rounded text-[11px] font-mono flex items-center space-x-1 transition ${
+              isPinningMode 
+                ? 'bg-[#DC2626] text-white border-[#DC2626] font-bold animate-pulse' 
+                : 'bg-[#FFFFFF] text-[#172033] hover:bg-[#F8FAFC] border-[#CBD5E1]'
+            }`}
+            title="Adjust or Pin your precise location on map"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span className="hidden md:inline">{isPinningMode ? 'Click Map to Pin' : 'Adjust GPS'}</span>
+          </button>
+
+          {/* Locate Me (Fresh Re-query) */}
+          <button
+            onClick={() => {
+              startLiveLocationTracking(true);
             }}
             className="p-1.5 bg-[#FFFFFF] hover:bg-[#F8FAFC] text-[#2563EB] border border-[#CBD5E1] rounded shadow-xs transition"
-            title="Locate Me (Live GPS)"
+            title="Re-query Browser Live GPS"
           >
             <Crosshair className="w-4 h-4" />
           </button>
@@ -555,6 +638,15 @@ export const UrbanMap: React.FC = () => {
       {/* Main Map Canvas */}
       <div className="flex-1 relative w-full h-full">
         <div ref={mapContainerRef} className="w-full h-full z-0" />
+
+        {/* Floating Pinning Active Overlay Banner */}
+        {isPinningMode && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 z-20 bg-[#172033]/95 backdrop-blur-xs text-white px-4 py-2 rounded-full shadow-xl border border-[#3B82F6] font-sans text-xs flex items-center space-x-2 animate-bounce">
+            <MapPin className="w-4 h-4 text-[#EF4444] animate-pulse shrink-0" />
+            <span className="font-semibold">Click anywhere on the map or drag the blue marker to set your precise location!</span>
+            <button onClick={() => setIsPinningMode(false)} className="ml-2 font-bold hover:text-[#93C5FD]">✕</button>
+          </div>
+        )}
 
         {/* Floating Telemetry & Road Coverage Banner */}
         <div className="absolute top-3 left-3 z-10 bg-[#FFFFFF]/95 backdrop-blur-xs border border-[#E2E8F0] p-3 rounded-lg shadow-md font-mono text-xs space-y-1.5 max-w-xs">

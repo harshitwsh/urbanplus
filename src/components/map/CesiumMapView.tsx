@@ -70,10 +70,23 @@ export const CesiumMapView: React.FC = () => {
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   // Geolocation States
-  const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
+  const [userLocation, setUserLocation] = useState<UserLocation | null>(() => {
+    try {
+      const saved = localStorage.getItem('urbanpulse_user_location');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('IDLE');
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isPinningMode, setIsPinningMode] = useState<boolean>(false);
+  const isPinningModeRef = useRef<boolean>(false);
+
+  useEffect(() => {
+    isPinningModeRef.current = isPinningMode;
+  }, [isPinningMode]);
 
   // Selected Entity Popup Details
   const [selectedEntityInfo, setSelectedEntityInfo] = useState<{
@@ -217,6 +230,7 @@ export const CesiumMapView: React.FC = () => {
     setUserLocation(loc);
     setLocationStatus('GPS CONNECTED');
     setIsLocating(false);
+    try { localStorage.setItem('urbanpulse_user_location', JSON.stringify(loc)); } catch {}
 
     updateUserLocationEntity(loc);
 
@@ -617,31 +631,42 @@ export const CesiumMapView: React.FC = () => {
   };
 
   const handleLocateMeClick = () => {
-    if (userLocation) {
-      flyToLocation(userLocation.lat, userLocation.lng, 1400);
-      showToast(`Centered on your GPS location (±${userLocation.accuracy}m)`);
-    } else {
-      startLiveLocationTracking(true);
-    }
+    startLiveLocationTracking(true);
+    showToast('Re-querying browser live GPS...');
   };
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!searchQuery.trim()) return;
 
-    const q = searchQuery.toLowerCase();
-    if (q.includes('golf')) {
-      flyToLocation(28.4595, 77.0266, 1600);
-      setSearchResult('Golf Course Road Corridor (28.4595, 77.0266)');
-    } else if (q.includes('cyber')) {
-      flyToLocation(28.4950, 77.0890, 1600);
-      setSearchResult('Cyber City Junction (28.4950, 77.0890)');
-    } else if (q.includes('iffco')) {
-      flyToLocation(28.4720, 77.0725, 1600);
-      setSearchResult('IFFCO Chowk Metro (28.4720, 77.0725)');
-    } else {
-      flyToLocation(28.4595, 77.0266, 3000);
-      setSearchResult(`Centered near: ${searchQuery}`);
+    try {
+      showToast(`Searching for "${searchQuery}"...`);
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}`
+      );
+      const data = await response.json();
+      if (data && data.length > 0) {
+        const top = data[0];
+        const lat = parseFloat(top.lat);
+        const lon = parseFloat(top.lon);
+        flyToLocation(lat, lon, 1600);
+        const shortName = top.display_name.split(',')[0];
+        setSearchResult(`${shortName} (${lat.toFixed(4)}, ${lon.toFixed(4)})`);
+        showToast(`3D Camera navigated to ${shortName}`);
+      } else {
+        const q = searchQuery.toLowerCase();
+        if (q.includes('golf')) {
+          flyToLocation(28.4595, 77.0266, 1600);
+          setSearchResult('Golf Course Road Corridor (28.4595, 77.0266)');
+        } else if (q.includes('cyber')) {
+          flyToLocation(28.4950, 77.0890, 1600);
+          setSearchResult('Cyber City Junction (28.4950, 77.0890)');
+        } else {
+          showToast(`No location found for "${searchQuery}"`);
+        }
+      }
+    } catch (err) {
+      showToast('Search query failed. Check internet connection.');
     }
   };
 

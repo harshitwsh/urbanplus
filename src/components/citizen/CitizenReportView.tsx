@@ -103,8 +103,17 @@ export const CitizenReportView: React.FC = () => {
     }
   ];
 
-  // Auto-detect GPS on component mount
+  // Auto-detect GPS on component mount (or load saved calibrated position)
   useEffect(() => {
+    try {
+      const saved = localStorage.getItem('urbanpulse_user_location');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed?.lat && parsed?.lng) {
+          setCoords({ lat: parsed.lat, lng: parsed.lng });
+        }
+      }
+    } catch {}
     handleDetectGPS();
   }, []);
 
@@ -112,14 +121,26 @@ export const CitizenReportView: React.FC = () => {
     setIsDetectingGps(true);
     if ('geolocation' in navigator) {
       navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        async (pos) => {
+          const lat = pos.coords.latitude;
+          const lng = pos.coords.longitude;
+          setCoords({ lat, lng });
           setIsDetectingGps(false);
+
+          // Reverse-geocode address via OpenStreetMap Nominatim
+          try {
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+            const data = await res.json();
+            if (data && data.display_name) {
+              const shortName = data.display_name.split(',').slice(0, 3).join(', ');
+              setLocationName(shortName);
+            }
+          } catch {}
         },
         () => {
           setIsDetectingGps(false);
         },
-        { enableHighAccuracy: true, timeout: 8000 }
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
       );
     } else {
       setIsDetectingGps(false);

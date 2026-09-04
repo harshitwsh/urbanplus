@@ -22,6 +22,7 @@ import {
   LogOut,
   ChevronDown
 } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 interface NavbarProps {
   onOpenJudgeGuide: () => void;
@@ -105,14 +106,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenJudgeGuide }) => {
       <div className="flex items-center justify-between px-4 py-3">
         {/* Brand Logo */}
         <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('command_center')}>
-          <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-700 via-blue-800 to-slate-900 flex items-center justify-center border border-blue-500/30 shadow-lg shadow-blue-950">
-            <Cpu className="w-6 h-6 text-blue-400" />
-          </div>
+          <Logo size="navbar" clickable={false} />
           <div>
             <div className="flex items-center space-x-2">
-              <h1 className="text-lg font-black tracking-tight text-white font-mono">
-                URBANPULSE <span className="text-blue-500">AI</span>
-              </h1>
               <span className="text-[10px] px-1.5 py-0.2 bg-blue-500/20 text-blue-300 font-semibold border border-blue-400/30 rounded">
                 v2.4
               </span>

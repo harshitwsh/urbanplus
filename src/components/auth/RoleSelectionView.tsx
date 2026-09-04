@@ -3,6 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/urbanpulse';
 import { Bus, Building2, HardHat, ShieldCheck, ArrowRight } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const RoleSelectionView: React.FC = () => {
   const { setUserRole, setActiveTab } = useApp();
@@ -64,13 +65,10 @@ export const RoleSelectionView: React.FC = () => {
     <div className="min-h-screen bg-[#F7F8FA] text-[#172033] flex flex-col justify-between p-6 md:p-12 font-sans select-none">
       {/* Header */}
       <div className="max-w-5xl mx-auto w-full flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center font-bold text-white text-sm font-mono shadow-sm">
-            UP
-          </div>
-          <div>
-            <h1 className="font-bold text-base text-[#172033]">URBANPULSE</h1>
-            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • DEMONSTRATION</p>
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('landing')}>
+          <Logo size="navbar" clickable={false} />
+          <div className="hidden sm:block border-l border-[#E2E8F0] pl-2.5 ml-1">
+            <p className="text-[10px] text-[#64748B] font-mono font-semibold">SIH26124 DEMONSTRATION</p>
           </div>
         </div>
 

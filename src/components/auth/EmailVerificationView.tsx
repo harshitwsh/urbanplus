@@ -13,6 +13,7 @@ import {
   Inbox, 
   AlertTriangle 
 } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const EmailVerificationView: React.FC = () => {
   const { user, sendVerificationEmail, checkEmailVerification, logout } = useAuth();
@@ -130,12 +131,9 @@ export const EmailVerificationView: React.FC = () => {
       {/* Top Brand Bar */}
       <div className="max-w-4xl mx-auto w-full flex items-center justify-between">
         <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('landing')}>
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center font-bold text-white text-sm font-mono shadow-sm">
-            UP
-          </div>
-          <div>
-            <h1 className="font-bold text-base text-[#172033]">URBANPULSE</h1>
-            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • FIREBASE AUTHENTICATION</p>
+          <Logo size="navbar" clickable={false} />
+          <div className="hidden sm:block border-l border-[#E2E8F0] pl-2.5 ml-1">
+            <p className="text-[10px] text-[#64748B] font-mono font-semibold">FIREBASE AUTHENTICATION</p>
           </div>
         </div>
 
@@ -150,10 +148,10 @@ export const EmailVerificationView: React.FC = () => {
 
       {/* Main Verification Card */}
       <div className="max-w-md mx-auto w-full my-auto">
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 md:p-8 space-y-6 shadow-xl text-center">
-          {/* Email Icon Animation */}
-          <div className="w-16 h-16 rounded-2xl bg-[#EFF6FF] border border-[#BFDBFE] mx-auto flex items-center justify-center text-[#2563EB] shadow-xs">
-            <Mail className="w-8 h-8 animate-bounce" />
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-2xl p-6 md:p-8 space-y-5 shadow-xl text-center">
+          {/* Official Logo Banner */}
+          <div className="flex flex-col items-center justify-center pb-1">
+            <Logo size="auth" clickable={false} />
           </div>
 
           <div className="space-y-2">

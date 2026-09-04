@@ -16,6 +16,7 @@ import {
   CheckSquare,
   Square
 } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 type AuthMode = 'LOGIN' | 'SIGNUP' | 'FORGOT_PASSWORD';
 
@@ -184,12 +185,9 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
           onClick={() => setActiveTab('landing')}
           className="flex items-center space-x-3 cursor-pointer"
         >
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center font-bold text-white text-sm font-mono shadow-sm">
-            UP
-          </div>
-          <div>
-            <h1 className="font-bold text-base text-[#172033]">URBANPULSE</h1>
-            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • BEL DEMONSTRATION</p>
+          <Logo size="navbar" clickable={false} />
+          <div className="hidden sm:block border-l border-[#E2E8F0] pl-2.5 ml-1">
+            <p className="text-[10px] text-[#64748B] font-mono font-semibold">BEL / SIH26124 DEMONSTRATION</p>
           </div>
         </div>
 
@@ -251,6 +249,11 @@ export const LoginView: React.FC<{ initialMode?: AuthMode }> = ({ initialMode })
         {/* Right Side Authentication Panel */}
         <div className="lg:col-span-5">
           <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-6 md:p-8 space-y-5 shadow-xl">
+            {/* Official Logo Banner */}
+            <div className="flex flex-col items-center justify-center pb-1">
+              <Logo size="auth" clickable={false} />
+            </div>
+
             {/* Header / Mode Switcher */}
             <div className="space-y-1">
               <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2.5">

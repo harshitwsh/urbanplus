@@ -16,6 +16,7 @@ import {
   Clock,
   CheckSquare
 } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const LandingPage: React.FC = () => {
   const { setActiveTab, setIsDemoRunning } = useApp();
@@ -73,13 +74,10 @@ export const LandingPage: React.FC = () => {
     <div className="min-h-screen bg-[#F7F8FA] text-[#172033] font-sans flex flex-col justify-between select-none">
       {/* Top Navbar */}
       <header className="h-16 bg-[#FFFFFF] border-b border-[#E2E8F0] px-6 md:px-12 flex items-center justify-between sticky top-0 z-50">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 rounded-lg bg-[#2563EB] flex items-center justify-center font-bold text-white text-sm font-mono shadow-sm">
-            UP
-          </div>
-          <div>
-            <h1 className="font-bold text-base text-[#172033] tracking-tight">URBANPULSE</h1>
-            <p className="text-[10px] text-[#64748B] font-mono">SIH26124 • BHARAT ELECTRONICS LIMITED</p>
+        <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('command_center')}>
+          <Logo size="navbar" clickable={false} />
+          <div className="hidden sm:block border-l border-[#E2E8F0] pl-2.5 ml-1">
+            <p className="text-[10px] text-[#64748B] font-mono font-semibold">SIH26124 • BHARAT ELECTRONICS LIMITED</p>
           </div>
         </div>
 
@@ -289,10 +287,13 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[#FFFFFF] border-t border-[#E2E8F0] py-8 px-6 text-center text-xs text-[#64748B] font-mono">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <div>
-            <strong>URBANPULSE</strong> • Developed for SIH26124 (Bharat Electronics Limited)
+      <footer className="bg-[#FFFFFF] border-t border-[#E2E8F0] py-8 px-6 text-xs text-[#64748B] font-mono">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center space-x-3 cursor-pointer" onClick={() => setActiveTab('command_center')}>
+            <Logo size="footer" clickable={false} />
+            <span className="text-[11px] text-[#64748B]">
+              • Developed for SIH26124 (Bharat Electronics Limited)
+            </span>
           </div>
           <div>
             Theme: Smart Automation • Category: Software

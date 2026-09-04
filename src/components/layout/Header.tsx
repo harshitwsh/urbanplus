@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { UserRole } from '../../types/urbanpulse';
 import { Play, Pause, Clock, Sparkles, Menu, X, LogOut, User as UserIcon } from 'lucide-react';
 import { DemoGuideModal } from './DemoGuideModal';
+import { Logo } from '../common/Logo';
 
 interface HeaderProps {
   onToggleMobileMenu?: () => void;
@@ -54,21 +55,17 @@ export const Header: React.FC<HeaderProps> = ({ onToggleMobileMenu, isMobileMenu
           )}
 
           <div 
-            onClick={() => setActiveTab('landing')}
+            onClick={() => setActiveTab('command_center')}
             className="flex items-center space-x-2.5 cursor-pointer"
           >
-            <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center font-bold text-white text-xs font-mono shadow-sm">
-              UP
-            </div>
-            <div>
-              <h1 className="font-bold text-sm text-[#172033] tracking-tight flex items-center space-x-2">
-                <span>URBANPULSE</span>
-                <span className="text-[#8290A3] font-normal text-xs">|</span>
-                <span className="text-xs text-[#2563EB] font-mono font-semibold uppercase truncate max-w-[120px] sm:max-w-none">
+            <Logo size="navbar" clickable={false} />
+            <div className="hidden sm:block border-l border-[#E2E8F0] pl-2.5 ml-1">
+              <h1 className="font-bold text-xs text-[#172033] tracking-tight flex items-center space-x-1.5">
+                <span className="text-xs text-[#2563EB] font-mono font-semibold uppercase truncate max-w-[140px]">
                   {activeTab.replace('_', ' ')}
                 </span>
               </h1>
-              <p className="text-[10px] text-[#64748B] font-mono hidden sm:block">AI-Powered Mobile Urban Intelligence • BEL / SIH26124</p>
+              <p className="text-[9px] text-[#64748B] font-mono">BEL / SIH26124</p>
             </div>
           </div>
 

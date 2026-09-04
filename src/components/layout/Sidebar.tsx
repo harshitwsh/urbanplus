@@ -23,6 +23,7 @@ import {
   User as UserIcon,
   Shield
 } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 interface SidebarProps {
   isMobileOpen?: boolean;
@@ -105,16 +106,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
         {/* Brand Header */}
         <div className="flex items-center justify-between">
           <div 
-            onClick={() => handleSelectTab('landing')}
-            className="px-2 py-1.5 flex items-center space-x-2.5 cursor-pointer rounded hover:bg-[#F8FAFC] transition"
+            onClick={() => handleSelectTab('command_center')}
+            className="px-2 py-1.5 flex items-center space-x-2 cursor-pointer rounded hover:bg-[#F8FAFC] transition"
           >
-            <div className="w-7 h-7 rounded-md bg-[#2563EB] flex items-center justify-center font-bold text-white text-xs font-mono shadow-sm">
-              UP
-            </div>
-            <div>
-              <span className="font-bold text-sm text-[#172033] tracking-tight block">URBANPULSE</span>
-              <span className="text-[10px] text-[#64748B] font-mono block -mt-0.5">BEL • SIH26124</span>
-            </div>
+            <Logo size="sidebar" clickable={false} />
           </div>
 
           {onCloseMobile && (

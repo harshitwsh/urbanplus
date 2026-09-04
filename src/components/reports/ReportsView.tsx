@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { FileText, Download, Printer } from 'lucide-react';
+import { Logo } from '../common/Logo';
 
 export const ReportsView: React.FC = () => {
   const { roadDefects } = useApp();
@@ -141,12 +142,15 @@ export const ReportsView: React.FC = () => {
       {showPrintModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="bg-[#FFFFFF] border border-[#E2E8F0] text-[#172033] rounded-lg p-6 max-w-2xl w-full space-y-4 font-mono text-xs shadow-2xl">
-            <div className="flex justify-between border-b border-[#E2E8F0] pb-3">
-              <div>
-                <h3 className="text-sm font-bold text-[#172033]">URBANPULSE AI — EXECUTIVE AUDIT REPORT</h3>
-                <p className="text-[11px] text-[#526174]">SIH 2026 • SIH26124 Demonstration</p>
+            <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-3">
+              <div className="flex items-center space-x-3">
+                <Logo size="navbar" clickable={false} />
+                <div className="border-l border-[#E2E8F0] pl-2.5">
+                  <h3 className="text-sm font-bold text-[#172033]">EXECUTIVE AUDIT REPORT</h3>
+                  <p className="text-[11px] text-[#526174]">SIH 2026 • SIH26124 Demonstration</p>
+                </div>
               </div>
-              <button onClick={() => setShowPrintModal(false)} className="text-[#8290A3] hover:text-[#172033]">Close</button>
+              <button onClick={() => setShowPrintModal(false)} className="text-[#8290A3] hover:text-[#172033] font-bold text-base">✕</button>
             </div>
 
             <div className="space-y-2 text-[#526174]">

@@ -25,6 +25,7 @@ import { ReportsView } from '../reports/ReportsView';
 import { AIArchitectureView } from '../architecture/AIArchitectureView';
 import { SettingsView } from '../system/SettingsView';
 import { UserProfileView } from '../profile/UserProfileView';
+import { Logo } from '../common/Logo';
 import { Loader2 } from 'lucide-react';
 
 export const AppShell: React.FC = () => {
@@ -45,12 +46,10 @@ export const AppShell: React.FC = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#F7F8FA] flex flex-col items-center justify-center space-y-4 font-sans select-none">
-        <div className="w-12 h-12 rounded-xl bg-[#2563EB] flex items-center justify-center font-bold text-white text-base font-mono shadow-md animate-pulse">
-          UP
-        </div>
+        <Logo size="loading" clickable={false} />
         <div className="flex items-center space-x-2 text-xs font-mono text-[#64748B]">
           <Loader2 className="w-4 h-4 animate-spin text-[#2563EB]" />
-          <span>VERIFYING URBANPULSE FIREBASE AUTHENTICATION...</span>
+          <span>INITIALIZING URBANPULSE CLOUD INTELLIGENCE...</span>
         </div>
       </div>
     );

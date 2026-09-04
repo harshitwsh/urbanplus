@@ -220,7 +220,7 @@ export const PRIMARY_FUSED_DEFECT: RoadDefect = {
   severity: 'HIGH',
   status: 'OPEN',
   evidenceCount: 3,
-  imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+  imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
   assignedDept: 'Road Maintenance Dept',
   slaHours: 24,
   sightings: [
@@ -231,7 +231,7 @@ export const PRIMARY_FUSED_DEFECT: RoadDefect = {
       timestamp: '10:42 AM',
       confidence: 82.4,
       speedKm: 36,
-      imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
       lat: 28.45950,
       lng: 77.02660
     },
@@ -242,7 +242,7 @@ export const PRIMARY_FUSED_DEFECT: RoadDefect = {
       timestamp: '11:07 AM',
       confidence: 91.2,
       speedKm: 29,
-      imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
       lat: 28.45954,
       lng: 77.02663
     },
@@ -253,7 +253,7 @@ export const PRIMARY_FUSED_DEFECT: RoadDefect = {
       timestamp: '12:18 PM',
       confidence: 96.7,
       speedKm: 40,
-      imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
       lat: 28.45948,
       lng: 77.02658
     }
@@ -388,7 +388,7 @@ export const MOCK_ROAD_DEFECTS: RoadDefect[] = [
     severity: 'HIGH',
     status: 'OPEN',
     evidenceCount: 2,
-    imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+    imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
     assignedDept: 'Road Maintenance Dept',
     slaHours: 24,
     sightings: []

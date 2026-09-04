@@ -19,7 +19,7 @@ export const EdgeVisionSimulator: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState<boolean>(true);
   const [fps, setFps] = useState<number>(24);
   const [latency, setLatency] = useState<number>(41);
-  const [frameCount, setFrameCount] = useState<number>(18666);
+  const [frameCount, setFrameCount] = useState<number>(18684);
   const [eventsCount, setEventsCount] = useState<number>(317);
   const [activeChannelId, setActiveChannelId] = useState<string>('CAM-104');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -29,9 +29,9 @@ export const EdgeVisionSimulator: React.FC = () => {
   const channels: FeedChannel[] = [
     {
       id: 'CAM-104',
-      name: 'BUS-104 Front Dashcam',
-      route: 'Route 07: Sector 56 ↔ Cyber City',
-      imageUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1600&q=80',
+      name: 'BUS-104 Front Bus Dashcam',
+      route: 'Route 07: Sector 56 ↔ Cyber City Corridor',
+      imageUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1600&q=80',
       lat: 28.4595,
       lng: 77.0266,
       speed: 34,
@@ -39,144 +39,120 @@ export const EdgeVisionSimulator: React.FC = () => {
         { 
           id: 'b1', 
           label: 'Pothole', 
-          confidence: 94.7, 
-          x: 32, 
-          y: 68, 
+          confidence: 95.2, 
+          x: 34, 
+          y: 72, 
           w: 22, 
-          h: 16, 
+          h: 15, 
           color: '#D97706',
           category: 'pothole',
-          description: 'Road asphalt surface cavity in driving lane'
+          description: 'Road asphalt surface cavity in lower driving lane'
         },
         { 
           id: 'b2', 
           label: 'Vehicle (Sedan)', 
-          confidence: 97.2, 
-          x: 54, 
-          y: 42, 
-          w: 22, 
+          confidence: 97.4, 
+          x: 48, 
+          y: 45, 
+          w: 20, 
           h: 22, 
           color: '#2563EB',
           category: 'vehicle',
-          description: 'Forward travelling passenger sedan'
-        },
-        { 
-          id: 'b3', 
-          label: 'Pedestrian', 
-          confidence: 92.4, 
-          x: 8, 
-          y: 46, 
-          w: 7, 
-          h: 26, 
-          color: '#0F9D8A',
-          category: 'pedestrian',
-          description: 'Pedestrian on left pedestrian sidewalk'
+          description: 'Forward travelling white sedan in center lane'
         },
         { 
           id: 'b4', 
           label: 'Traffic Sign', 
-          confidence: 89.0, 
-          x: 78, 
+          confidence: 89.1, 
+          x: 74, 
           y: 18, 
-          w: 9, 
-          h: 20, 
+          w: 12, 
+          h: 18, 
           color: '#64748B',
           category: 'sign',
-          description: 'Regulatory speed limit sign post'
+          description: 'Overhead direction sign / traffic signal gantry'
         }
       ]
     },
     {
       id: 'CAM-208',
       name: 'BUS-208 Corridor Camera',
-      route: 'Route 12: Golf Course Road Corridor',
-      imageUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1600&q=80',
+      route: 'Route 12: Golf Course Road Boulevard',
+      imageUrl: 'https://images.unsplash.com/photo-1580273916550-e323be2ae537?auto=format&fit=crop&w=1600&q=80',
       lat: 28.4720,
       lng: 77.0725,
       speed: 42,
       boxes: [
         { 
           id: 'b201', 
+          label: 'Vehicle (SUV)', 
+          confidence: 98.1, 
+          x: 35, 
+          y: 42, 
+          w: 25, 
+          h: 26, 
+          color: '#2563EB',
+          category: 'vehicle',
+          description: 'Silver SUV driving ahead in center lane'
+        },
+        { 
+          id: 'b202', 
           label: 'Asphalt Crack Cluster', 
-          confidence: 91.4, 
-          x: 38, 
-          y: 70, 
+          confidence: 92.3, 
+          x: 18, 
+          y: 74, 
           w: 24, 
-          h: 16, 
+          h: 14, 
           color: '#D97706',
           category: 'pothole',
           description: 'Fissures along asphalt pavement shoulder'
         },
         { 
-          id: 'b202', 
-          label: 'Public Transit Bus', 
-          confidence: 98.6, 
-          x: 14, 
-          y: 35, 
-          w: 28, 
-          h: 32, 
-          color: '#2563EB',
-          category: 'vehicle',
-          description: 'Oncoming municipal transit bus'
-        },
-        { 
           id: 'b203', 
-          label: 'Streetlight Pole', 
-          confidence: 94.1, 
-          x: 82, 
-          y: 14, 
+          label: 'Speed Limit Sign', 
+          confidence: 91.0, 
+          x: 80, 
+          y: 20, 
           w: 8, 
-          h: 35, 
+          h: 22, 
           color: '#64748B',
           category: 'sign',
-          description: 'Overhead municipal illumination fixture'
+          description: 'Roadside 50 km/h municipal speed limit marker'
         }
       ]
     },
     {
       id: 'CAM-402',
-      name: 'CAM-402 Monsoon Underpass',
+      name: 'CAM-402 Underpass Optics',
       route: 'IFFCO Chowk Underpass North',
-      imageUrl: 'https://images.unsplash.com/photo-1578637387939-43c525550085?auto=format&fit=crop&w=1600&q=80',
+      imageUrl: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?auto=format&fit=crop&w=1600&q=80',
       lat: 28.4950,
       lng: 77.0890,
       speed: 0,
       boxes: [
         { 
           id: 'b401', 
-          label: 'Severe Pothole', 
-          confidence: 96.8, 
-          x: 35, 
-          y: 65, 
-          w: 28, 
-          h: 20, 
-          color: '#DC2626',
-          category: 'pothole',
-          description: 'Deep road cavity with exposed sub-base'
+          label: 'Public Transit Bus', 
+          confidence: 98.9, 
+          x: 15, 
+          y: 35, 
+          w: 32, 
+          h: 35, 
+          color: '#2563EB',
+          category: 'vehicle',
+          description: 'Red municipal transit bus in left lane'
         },
         { 
           id: 'b402', 
-          label: 'Pavement Edge Erosion', 
-          confidence: 89.5, 
-          x: 10, 
-          y: 75, 
-          w: 20, 
-          h: 15, 
-          color: '#D97706',
+          label: 'Severe Pothole', 
+          confidence: 96.5, 
+          x: 32, 
+          y: 68, 
+          w: 35, 
+          h: 18, 
+          color: '#DC2626',
           category: 'pothole',
-          description: 'Curb line asphalt deterioration'
-        },
-        { 
-          id: 'b403', 
-          label: 'Caution Sign', 
-          confidence: 93.2, 
-          x: 75, 
-          y: 22, 
-          w: 12, 
-          h: 24, 
-          color: '#64748B',
-          category: 'sign',
-          description: 'Underpass clearance warning marker'
+          description: 'Accumulated surface cavity on underpass lane'
         }
       ]
     }
@@ -266,7 +242,7 @@ export const EdgeVisionSimulator: React.FC = () => {
             </span>
           </div>
           <p className="text-xs text-[#526174] mt-1">
-            Real-time optical object detection & road surface defect localization running on onboard municipal hardware.
+            Real-time optical object detection & road surface defect localization running on onboard municipal bus dashcams.
           </p>
         </div>
 
@@ -303,7 +279,7 @@ export const EdgeVisionSimulator: React.FC = () => {
         {/* Video Viewport */}
         <div className="lg:col-span-2 space-y-3">
           <div className="relative rounded-lg overflow-hidden border border-[#E2E8F0] bg-black shadow-lg aspect-video group">
-            {/* Real Road Camera Image */}
+            {/* Authentic Bus Dashcam Camera Image */}
             <img 
               src={currentChannel.imageUrl} 
               alt={currentChannel.name}
@@ -315,7 +291,7 @@ export const EdgeVisionSimulator: React.FC = () => {
               <div className="absolute inset-0 bg-gradient-to-b from-transparent via-[#2563EB]/10 to-transparent pointer-events-none animate-scanline" />
             )}
 
-            {/* Bounding Boxes with Precise Road Surface Alignment */}
+            {/* Bounding Boxes matching real visible objects */}
             {filteredBoxes.map((box) => {
               const isSelected = selectedBoxId === box.id;
               return (
@@ -415,7 +391,6 @@ export const EdgeVisionSimulator: React.FC = () => {
                 { id: 'all', label: 'All' },
                 { id: 'pothole', label: 'Potholes & Defects' },
                 { id: 'vehicle', label: 'Vehicles' },
-                { id: 'pedestrian', label: 'Pedestrians' },
                 { id: 'sign', label: 'Signs' }
               ].map(cat => (
                 <button

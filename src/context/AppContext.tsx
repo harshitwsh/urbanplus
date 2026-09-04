@@ -491,7 +491,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       status: 'OPEN',
       evidenceCount: 1,
       sightings: [],
-      imageUrl: newDef.imageUrl || 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      imageUrl: newDef.imageUrl || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
       assignedDept: 'Road Maintenance Dept',
       slaHours: 24
     };

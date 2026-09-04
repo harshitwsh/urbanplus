@@ -176,7 +176,7 @@ export const MobileCityEyesView: React.FC = () => {
 
           <div className="h-64 bg-[#0F172A] rounded-xl relative overflow-hidden flex items-center justify-center text-white border border-[#334155]">
             <img
-              src="https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=1200&q=80"
+              src="https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80"
               alt="Dashcam feed"
               className="w-full h-full object-cover opacity-80"
             />

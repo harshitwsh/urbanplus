@@ -79,7 +79,7 @@ export class CitizenReportService {
       description: reportData.description || 'Reported via Citizen Public Reporting Mobile Portal.',
       images: reportData.images && reportData.images.length > 0 
         ? reportData.images 
-        : ['https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80'],
+        : ['https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80'],
       lat: reportData.lat || 28.4595,
       lng: reportData.lng || 77.0266,
       locationName: reportData.locationName || 'Gurugram Urban Corridor',

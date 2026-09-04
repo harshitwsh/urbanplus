@@ -29,7 +29,7 @@ export class AIDetectionService {
       lng: 77.0266,
       locationName: 'Golf Course Road (Junction 4)',
       timestamp: new Date(Date.now() - 2 * 60 * 1000).toLocaleTimeString('en-IN'),
-      frameUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      frameUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
       status: 'Pending Verification',
       severity: 'HIGH',
       boundingBoxes: [
@@ -65,7 +65,7 @@ export class AIDetectionService {
       lng: 77.0890,
       locationName: 'Cyber City Rapid Metro Corridor',
       timestamp: new Date(Date.now() - 42 * 60 * 1000).toLocaleTimeString('en-IN'),
-      frameUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      frameUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
       status: 'Pending Verification',
       severity: 'MEDIUM',
       boundingBoxes: [
@@ -93,7 +93,7 @@ export class AIDetectionService {
       lng: 77.0266 + (Math.random() - 0.5) * 0.02,
       locationName: 'Uploaded Dashcam GPS Track (Gurugram)',
       timestamp: new Date().toLocaleTimeString('en-IN'),
-      frameUrl: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80',
+      frameUrl: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80',
       status: 'Pending Verification',
       severity: 'HIGH',
       boundingBoxes: [

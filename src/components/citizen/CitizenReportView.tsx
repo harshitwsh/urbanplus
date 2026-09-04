@@ -28,7 +28,7 @@ export const CitizenReportView: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [selectedType, setSelectedType] = useState<DefectType>('pothole');
   const [severity, setSeverity] = useState<EventSeverity>('HIGH');
-  const [imagePreview, setImagePreview] = useState<string>('https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?auto=format&fit=crop&w=800&q=80');
+  const [imagePreview, setImagePreview] = useState<string>('https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=800&q=80');
   const [description, setDescription] = useState<string>('');
   const [locationName, setLocationName] = useState<string>('Golf Course Road, Sector 28, Gurugram');
   

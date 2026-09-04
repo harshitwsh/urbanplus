@@ -14,18 +14,24 @@ import {
   ZoomIn,
   ZoomOut,
   Maximize2,
-  ShieldAlert
+  ShieldAlert,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 
-export const ThreeDGlobeView: React.FC = () => {
+interface ThreeDGlobeViewProps {
+  onSwitchToCesium?: () => void;
+}
+
+export const ThreeDGlobeView: React.FC<ThreeDGlobeViewProps> = ({ onSwitchToCesium }) => {
   const { roadDefects, buses, setSelectedDefect, setActiveTab } = useApp();
 
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [selectedCluster, setSelectedCluster] = useState<any | null>(null);
   const [isAutoRotating, setIsAutoRotating] = useState<boolean>(true);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
+  const [zoomLevel, setZoomLevel] = useState<number>(50);
 
-  // Hotspots mapped on the 3D Globe
+  // Hotspots mapped on the 3D Satellite Globe
   const HOTSPOT_CLUSTERS = [
     {
       id: 'cluster-sec29',
@@ -75,8 +81,9 @@ export const ThreeDGlobeView: React.FC = () => {
 
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const globeGroupRef = useRef<THREE.Group | null>(null);
+  const cloudsMeshRef = useRef<THREE.Mesh | null>(null);
 
-  // Setup Three.js 3D Interactive WebGL Globe
+  // Setup Three.js Apple Maps / Snapchat Style Photorealistic 3D Earth Globe
   useEffect(() => {
     if (!containerRef.current) return;
 
@@ -86,7 +93,7 @@ export const ThreeDGlobeView: React.FC = () => {
 
     // Scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x0a0e17);
+    scene.background = new THREE.Color(0x060913); // Deep space background
 
     // Camera
     const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -94,121 +101,120 @@ export const ThreeDGlobeView: React.FC = () => {
     cameraRef.current = camera;
 
     // Renderer
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     renderer.setSize(width, height);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     container.appendChild(renderer.domElement);
 
-    // Lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+    // Realistic Solar & Ambient Lighting
+    const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
     scene.add(ambientLight);
 
-    const dirLight = new THREE.DirectionalLight(0x38bdf8, 1.5);
-    dirLight.position.set(5, 3, 5);
-    scene.add(dirLight);
+    const sunLight = new THREE.DirectionalLight(0xffffff, 2.0);
+    sunLight.position.set(5, 3, 5);
+    scene.add(sunLight);
 
-    const pointLight = new THREE.PointLight(0x2563eb, 2, 100);
-    pointLight.position.set(-5, -3, -5);
-    scene.add(pointLight);
+    const atmosphereLight = new THREE.DirectionalLight(0x38bdf8, 0.8);
+    atmosphereLight.position.set(-5, -3, -5);
+    scene.add(atmosphereLight);
 
     // Globe Group
     const globeGroup = new THREE.Group();
     scene.add(globeGroup);
     globeGroupRef.current = globeGroup;
 
-    // 1. Procedural 3D Earth Texture Creation
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 1024;
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      // Ocean background
-      ctx.fillStyle = '#0f172a';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    // Texture Loader for Photorealistic NASA / Satellite Earth Textures
+    const textureLoader = new THREE.TextureLoader();
 
-      // Lat/Lng Graticule lines
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < canvas.width; x += 64) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
+    // Create high-detail photorealistic Earth satellite surface texture
+    const earthDayTexture = textureLoader.load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_atmos_2048.jpg',
+      undefined,
+      undefined,
+      () => {
+        // Fallback procedural detailed Earth texture if offline
+        const canvas = document.createElement('canvas');
+        canvas.width = 2048;
+        canvas.height = 1024;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.fillStyle = '#1e3a8a'; // Deep ocean blue
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Realistic green & brown continent shapes
+          ctx.fillStyle = '#15803d'; // Landmass green
+          ctx.beginPath(); ctx.arc(1450, 420, 220, 0, Math.PI * 2); ctx.fill(); // Asia/India
+          ctx.fillStyle = '#b45309'; // Desert brown
+          ctx.beginPath(); ctx.arc(1100, 480, 240, 0, Math.PI * 2); ctx.fill(); // Africa/Europe
+          ctx.fillStyle = '#166534';
+          ctx.beginPath(); ctx.arc(600, 450, 280, 0, Math.PI * 2); ctx.fill(); // Americas
+        }
+        return new THREE.CanvasTexture(canvas);
       }
-      for (let y = 0; y < canvas.height; y += 64) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
+    );
 
-      // Continents / Landmass outlines
-      ctx.fillStyle = '#1e3a8a';
-      ctx.globalAlpha = 0.85;
+    const earthSpecularMap = textureLoader.load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_specular_2048.jpg'
+    );
+    const earthNormalMap = textureLoader.load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_normal_2048.jpg'
+    );
+    const earthCloudsTexture = textureLoader.load(
+      'https://raw.githubusercontent.com/mrdoob/three.js/dev/examples/textures/planets/earth_clouds_1024.png'
+    );
 
-      // Draw stylized landmasses
-      // Asia & India region
-      ctx.beginPath();
-      ctx.arc(1460, 420, 180, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Europe & Africa
-      ctx.beginPath();
-      ctx.arc(1100, 480, 220, 0, Math.PI * 2);
-      ctx.fill();
-
-      // Americas
-      ctx.beginPath();
-      ctx.arc(600, 450, 260, 0, Math.PI * 2);
-      ctx.fill();
-
-      // India Highlight Spot
-      ctx.fillStyle = '#2563eb';
-      ctx.beginPath();
-      ctx.arc(1460, 420, 60, 0, Math.PI * 2);
-      ctx.fill();
-    }
-
-    const texture = new THREE.CanvasTexture(canvas);
-
-    // 2. Main 3D Sphere Geometry
+    // 1. Photorealistic 3D Earth Globe Sphere
     const globeGeo = new THREE.SphereGeometry(2, 64, 64);
-    const globeMat = new THREE.MeshStandardMaterial({
-      map: texture,
-      roughness: 0.6,
-      metalness: 0.2,
+    const globeMat = new THREE.MeshPhongMaterial({
+      map: earthDayTexture,
+      specularMap: earthSpecularMap,
+      normalMap: earthNormalMap,
+      specular: new THREE.Color(0x38bdf8),
+      shininess: 25,
       wireframe: false
     });
     const globeMesh = new THREE.Mesh(globeGeo, globeMat);
     globeGroup.add(globeMesh);
 
-    // 3. Outer Atmosphere Glow Ring
+    // 2. Realistic Rotating Cloud Sphere Layer
+    const cloudsGeo = new THREE.SphereGeometry(2.03, 64, 64);
+    const cloudsMat = new THREE.MeshStandardMaterial({
+      map: earthCloudsTexture,
+      transparent: true,
+      opacity: 0.35,
+      blending: THREE.AdditiveBlending
+    });
+    const cloudsMesh = new THREE.Mesh(cloudsGeo, cloudsMat);
+    globeGroup.add(cloudsMesh);
+    cloudsMeshRef.current = cloudsMesh;
+
+    // 3. Apple Maps / Snapchat Map Blue Atmosphere Glow Ring
     const atmosphereGeo = new THREE.SphereGeometry(2.1, 64, 64);
     const atmosphereMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
-      opacity: 0.12,
+      opacity: 0.18,
       side: THREE.BackSide
     });
     const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
     globeGroup.add(atmosphereMesh);
 
-    // 4. Starfield Space Particles Background
+    // 4. Starfield Outer Space Background
     const starsGeo = new THREE.BufferGeometry();
-    const starCount = 800;
+    const starCount = 1200;
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i++) {
-      starPositions[i] = (Math.random() - 0.5) * 50;
+      starPositions[i] = (Math.random() - 0.5) * 60;
     }
     starsGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
-    const starsMat = new THREE.PointsMaterial({ color: 0x94a3b8, size: 0.08, transparent: true, opacity: 0.6 });
+    const starsMat = new THREE.PointsMaterial({ color: 0xe2e8f0, size: 0.07, transparent: true, opacity: 0.7 });
     const starField = new THREE.Points(starsGeo, starsMat);
     scene.add(starField);
 
-    // 5. Place 3D Beacons for Hotspot Clusters
+    // 5. Place 3D Glowing Beacons on Earth Surface
     const radius = 2.02;
     HOTSPOT_CLUSTERS.forEach((hotspot) => {
-      // Lat Lng to 3D Cartesian coordinates
+      // Lat/Lng to 3D Cartesian spherical coordinates
       const phi = (90 - hotspot.lat) * (Math.PI / 180);
       const theta = (hotspot.lng + 180) * (Math.PI / 180);
 
@@ -216,25 +222,25 @@ export const ThreeDGlobeView: React.FC = () => {
       const z = radius * Math.sin(phi) * Math.sin(theta);
       const y = radius * Math.cos(phi);
 
-      // Glowing Beacon Mesh
+      // Glowing Beacon Pin Mesh
       const color = hotspot.severity === 'CRITICAL' ? 0xdc2626 : 0xd97706;
-      const markerGeo = new THREE.SphereGeometry(0.08, 16, 16);
+      const markerGeo = new THREE.SphereGeometry(0.07, 16, 16);
       const markerMat = new THREE.MeshBasicMaterial({ color });
       const markerMesh = new THREE.Mesh(markerGeo, markerMat);
       markerMesh.position.set(x, y, z);
       (markerMesh as any)._hotspotData = hotspot;
       globeGroup.add(markerMesh);
 
-      // Vertical Laser Pillar
-      const cylinderGeo = new THREE.CylinderGeometry(0.01, 0.01, 0.6, 8);
-      const cylinderMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7 });
+      // Vertical Laser Light Pillar
+      const cylinderGeo = new THREE.CylinderGeometry(0.012, 0.012, 0.5, 8);
+      const cylinderMat = new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.8 });
       const pillarMesh = new THREE.Mesh(cylinderGeo, cylinderMat);
-      pillarMesh.position.set(x * 1.15, y * 1.15, z * 1.15);
+      pillarMesh.position.set(x * 1.12, y * 1.12, z * 1.12);
       pillarMesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x, y, z).normalize());
       globeGroup.add(pillarMesh);
     });
 
-    // Default view oriented towards India (Lat ~28, Lng ~77)
+    // Orient Globe towards India (Lat ~28.45°, Lng ~77.02°)
     globeGroup.rotation.y = -1.35;
     globeGroup.rotation.x = 0.45;
 
@@ -267,8 +273,8 @@ export const ThreeDGlobeView: React.FC = () => {
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       if (!cameraRef.current) return;
-      cameraRef.current.position.z = Math.max(3.2, Math.min(10, cameraRef.current.position.z + e.deltaY * 0.003));
-      setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.8) * 100));
+      cameraRef.current.position.z = Math.max(3.1, Math.min(10, cameraRef.current.position.z + e.deltaY * 0.003));
+      setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.9) * 100));
     };
 
     const domElement = renderer.domElement;
@@ -286,7 +292,11 @@ export const ThreeDGlobeView: React.FC = () => {
         globeGroupRef.current.rotation.y += 0.002;
       }
 
-      starField.rotation.y += 0.0003;
+      if (cloudsMeshRef.current) {
+        cloudsMeshRef.current.rotation.y += 0.0004;
+      }
+
+      starField.rotation.y += 0.0002;
       renderer.render(scene, camera);
     };
 
@@ -318,17 +328,17 @@ export const ThreeDGlobeView: React.FC = () => {
     };
   }, [isAutoRotating]);
 
-  // Smooth Controlled Zoom Actions
+  // Controlled Zoom Actions
   const handleZoomIn = () => {
     if (!cameraRef.current) return;
-    cameraRef.current.position.z = Math.max(3.2, cameraRef.current.position.z - 0.8);
-    setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.8) * 100));
+    cameraRef.current.position.z = Math.max(3.1, cameraRef.current.position.z - 0.8);
+    setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.9) * 100));
   };
 
   const handleZoomOut = () => {
     if (!cameraRef.current) return;
     cameraRef.current.position.z = Math.min(10, cameraRef.current.position.z + 0.8);
-    setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.8) * 100));
+    setZoomLevel(Math.round(((10 - cameraRef.current.position.z) / 6.9) * 100));
   };
 
   const handleResetView = () => {
@@ -340,18 +350,18 @@ export const ThreeDGlobeView: React.FC = () => {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-64px)] overflow-hidden bg-[#0A0E17] select-none font-sans text-white">
-      {/* Top Header Controls Bar */}
-      <div className="p-3 bg-[#0F172A] border-b border-[#1E293B] flex flex-wrap items-center justify-between gap-3 z-10 text-xs shadow-md">
+    <div className="flex flex-col h-full overflow-hidden bg-[#060913] select-none font-sans text-white relative">
+      {/* Top Header Controls Bar (Apple / Snapchat Style 3D Globe) */}
+      <div className="p-3 bg-[#0F172A]/90 backdrop-blur-md border-b border-[#1E293B] flex flex-wrap items-center justify-between gap-3 z-20 text-xs shadow-xl">
         <div className="flex items-center space-x-3">
           <div className="flex items-center space-x-2">
             <Globe className="w-5 h-5 text-[#38BDF8] animate-spin-slow" />
             <div>
               <h2 className="font-bold text-white font-mono text-sm leading-tight flex items-center space-x-2">
-                <span>3D SPATIAL URBAN GLOBE</span>
-                <span className="px-2 py-0.5 bg-[#0369A1] text-sky-200 text-[10px] rounded font-bold">THREE.JS WEBGL 3D</span>
+                <span>APPLE / SNAPCHAT STYLE 3D SATELLITE GLOBE</span>
+                <span className="px-2 py-0.5 bg-[#0284C7] text-white text-[10px] rounded font-bold">PHOTOREALISTIC 3D</span>
               </h2>
-              <p className="text-[11px] text-[#94A3B8]">Interactive 360° rotating globe with smooth zoom & spatial incident clusters</p>
+              <p className="text-[11px] text-[#94A3B8]">Photorealistic 3D Earth satellite globe with cloud layers, atmosphere glow & spatial pins</p>
             </div>
           </div>
         </div>
@@ -366,15 +376,25 @@ export const ThreeDGlobeView: React.FC = () => {
             }`}
           >
             <RotateCw className={`w-3.5 h-3.5 ${isAutoRotating ? 'animate-spin' : ''}`} />
-            <span>Auto-Rotate: {isAutoRotating ? 'ON' : 'OFF'}</span>
+            <span>Orbit: {isAutoRotating ? 'ON' : 'OFF'}</span>
           </button>
+
+          {/* Switch to Full 3D Cesium GIS Engine */}
+          {onSwitchToCesium && (
+            <button
+              onClick={onSwitchToCesium}
+              className="px-3 py-1.5 bg-[#0369A1] hover:bg-[#0284C7] text-white font-semibold rounded-lg border border-[#38BDF8] transition flex items-center space-x-1"
+            >
+              <span>3D Cesium GIS Engine</span>
+            </button>
+          )}
 
           {/* Switch to 2D City Map */}
           <button
             onClick={() => setActiveTab('map')}
-            className="px-3.5 py-1.5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center space-x-1"
+            className="px-3.5 py-1.5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold rounded-lg transition flex items-center space-x-1 shadow-md"
           >
-            <span>Switch to 2D City Map →</span>
+            <span>← Switch to 2D Map</span>
           </button>
         </div>
       </div>
@@ -391,7 +411,7 @@ export const ThreeDGlobeView: React.FC = () => {
                 <span>SPATIAL GLOBE TELEMETRY</span>
               </span>
               <span className="px-2 py-0.5 bg-[#0284C7]/20 text-[#38BDF8] rounded border border-[#0284C7]/40 font-bold text-[10px]">
-                60 FPS WEBGL
+                60 FPS SATELLITE
               </span>
             </div>
 
@@ -407,7 +427,7 @@ export const ThreeDGlobeView: React.FC = () => {
             </div>
           </div>
 
-          {/* Floating Smooth Zoom & Rotation Controls (Right Side) */}
+          {/* Floating Controls (Right Side) */}
           <div className="absolute right-4 top-4 z-20 flex flex-col space-y-2 font-mono text-xs">
             <button
               onClick={handleZoomIn}
@@ -442,7 +462,6 @@ export const ThreeDGlobeView: React.FC = () => {
                 onClick={() => {
                   setSelectedCluster(h);
                   if (globeGroupRef.current) {
-                    // Smoothly rotate globe to face selected cluster
                     globeGroupRef.current.rotation.y = -((h.lng + 180) * (Math.PI / 180));
                     globeGroupRef.current.rotation.x = (90 - h.lat) * (Math.PI / 180) - Math.PI / 2;
                   }

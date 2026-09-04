@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as Cesium from 'cesium';
 import 'cesium/Build/Cesium/Widgets/widgets.css';
+import { UrbanMap } from './UrbanMap';
 import { useApp } from '../../context/AppContext';
 import { RoadDefect, Bus, Incident, ActionItem, TrafficHotspot } from '../../types/urbanpulse';
 import { 
@@ -78,6 +79,7 @@ export const CesiumMapView: React.FC = () => {
       return null;
     }
   });
+  const [hasCesiumError, setHasCesiumError] = useState<boolean>(false);
   const [locationStatus, setLocationStatus] = useState<LocationStatus>('IDLE');
   const [isLocating, setIsLocating] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -318,38 +320,50 @@ export const CesiumMapView: React.FC = () => {
   useEffect(() => {
     if (!containerRef.current || viewerRef.current) return;
 
-    const viewer = new Cesium.Viewer(containerRef.current, {
-      animation: false,
-      timeline: false,
-      baseLayerPicker: false,
-      geocoder: false,
-      homeButton: false,
-      sceneModePicker: false,
-      navigationHelpButton: false,
-      fullscreenButton: false,
-      infoBox: false,
-      selectionIndicator: false,
-      shadows: false,
-      shouldAnimate: true
-    });
-
-    viewerRef.current = viewer;
-
-    setViewerBasemap('STREET');
-
-    // Initial viewpoint over Gurugram Corridor
-    viewer.camera.setView({
-      destination: Cesium.Cartesian3.fromDegrees(77.0266, 28.4595, 8500),
-      orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-60),
-        roll: 0.0
+    try {
+      if (Cesium && (Cesium as any).Ion) {
+        (Cesium as any).Ion.defaultAccessToken = '';
       }
-    });
 
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
+      const viewer = new Cesium.Viewer(containerRef.current, {
+        animation: false,
+        timeline: false,
+        baseLayerPicker: false,
+        geocoder: false,
+        homeButton: false,
+        sceneModePicker: false,
+        navigationHelpButton: false,
+        fullscreenButton: false,
+        infoBox: false,
+        selectionIndicator: false,
+        shadows: false,
+        shouldAnimate: true
+      });
+
+      viewerRef.current = viewer;
+      setViewerBasemap('STREET');
+
+      // Initial viewpoint over Gurugram Corridor
+      viewer.camera.setView({
+        destination: Cesium.Cartesian3.fromDegrees(77.0266, 28.4595, 8500),
+        orientation: {
+          heading: Cesium.Math.toRadians(0),
+          pitch: Cesium.Math.toRadians(-60),
+          roll: 0.0
+        }
+      });
+    } catch (err) {
+      console.warn('Cesium WebGL initialization error:', err);
+      setHasCesiumError(true);
+      return;
+    }
+
+    const activeViewer = viewerRef.current;
+    if (!activeViewer) return;
+
+    const handler = new Cesium.ScreenSpaceEventHandler(activeViewer.scene.canvas);
     handler.setInputAction((click: { position: Cesium.Cartesian2 }) => {
-      const pickedObject = viewer.scene.pick(click.position);
+      const pickedObject = activeViewer.scene.pick(click.position);
       if (Cesium.defined(pickedObject) && pickedObject.id) {
         const entity: Cesium.Entity = pickedObject.id;
         const meta = (entity as any)._urbanPulseMeta;
@@ -391,8 +405,8 @@ export const CesiumMapView: React.FC = () => {
         watchIdRef.current = null;
       }
       handler.destroy();
-      if (!viewer.isDestroyed()) {
-        viewer.destroy();
+      if (activeViewer && !activeViewer.isDestroyed()) {
+        activeViewer.destroy();
       }
       viewerRef.current = null;
     };
@@ -685,6 +699,10 @@ export const CesiumMapView: React.FC = () => {
     setSearchResult(null);
     showToast('Reset view to UrbanPulse Master Corridor');
   };
+
+  if (hasCesiumError) {
+    return <UrbanMap />;
+  }
 
   return (
     <div className="flex flex-col h-full relative overflow-hidden bg-[#F7F8FA] select-none font-sans">

@@ -295,6 +295,6 @@ export interface IncidentCorrelation {
   dashcamDetectionsCount: number;
   highestConfidence: number;
   evidenceImages: string[];
-  status: IssueStatus;
+  status: IssueStatus | 'Reported' | 'Under Review' | 'Verified' | 'Assigned' | 'In Progress' | 'Resolved';
   createdAt: string;
 }

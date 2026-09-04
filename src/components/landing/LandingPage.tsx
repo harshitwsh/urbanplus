@@ -83,6 +83,13 @@ export const LandingPage: React.FC = () => {
 
         <div className="flex items-center space-x-3">
           <button
+            onClick={() => setActiveTab('citizen_report')}
+            className="px-3.5 py-1.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#A7F3D0] text-xs font-bold rounded-md transition shadow-xs flex items-center space-x-1.5"
+          >
+            <ShieldCheck className="w-3.5 h-3.5 text-[#059669]" />
+            <span>CITIZEN PORTAL</span>
+          </button>
+          <button
             onClick={() => setActiveTab('login')}
             className="px-4 py-1.5 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-md border border-[#E2E8F0] transition"
           >
@@ -117,6 +124,17 @@ export const LandingPage: React.FC = () => {
           </p>
 
           <div className="flex flex-wrap items-center gap-3 pt-2">
+            <button
+              onClick={() => setActiveTab('citizen_report')}
+              className="px-5 py-2.5 bg-[#ECFDF5] hover:bg-[#D1FAE5] text-[#047857] border border-[#A7F3D0] text-sm font-bold rounded-lg shadow-sm transition flex items-center space-x-2"
+            >
+              <ShieldCheck className="w-5 h-5 text-[#059669]" />
+              <div className="text-left leading-tight">
+                <span className="block font-bold">CITIZEN PORTAL</span>
+                <span className="block text-[10px] text-[#059669]">Report urban issues in real time</span>
+              </div>
+            </button>
+
             <button
               onClick={() => setActiveTab('command_center')}
               className="px-6 py-3 bg-[#2563EB] hover:bg-blue-700 text-white text-sm font-semibold rounded-lg shadow-md transition flex items-center space-x-2"

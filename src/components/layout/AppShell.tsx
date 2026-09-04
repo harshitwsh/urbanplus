@@ -29,6 +29,7 @@ import { CitizenReportView } from '../citizen/CitizenReportView';
 import { MyReportsView } from '../citizen/MyReportsView';
 import { ThreeDGlobeView } from '../globe/ThreeDGlobeView';
 import { DashcamIntelligenceView } from '../dashcam/DashcamIntelligenceView';
+import { MobileCityEyesView } from '../dashcam/MobileCityEyesView';
 import { Logo } from '../common/Logo';
 import { Loader2 } from 'lucide-react';
 
@@ -129,6 +130,8 @@ export const AppShell: React.FC = () => {
         return <ThreeDGlobeView />;
       case 'dashcam':
         return <DashcamIntelligenceView />;
+      case 'mobile_eyes':
+        return <MobileCityEyesView />;
       default:
         return <CommandCenter />;
     }

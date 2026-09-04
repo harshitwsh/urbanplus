@@ -1,6 +1,6 @@
 import React from 'react';
-import { UrbanMap } from './UrbanMap';
+import { CesiumMapView } from './CesiumMapView';
 
 export const GISMap: React.FC = () => {
-  return <UrbanMap />;
+  return <CesiumMapView />;
 };

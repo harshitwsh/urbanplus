@@ -23,7 +23,8 @@ import {
   User as UserIcon,
   Shield,
   Globe,
-  AlertTriangle
+  AlertTriangle,
+  Sparkles
 } from 'lucide-react';
 import { Logo } from '../common/Logo';
 
@@ -51,6 +52,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileOpen, onCloseMobile })
     {
       title: 'INTELLIGENCE',
       items: [
+        { id: 'mobile_eyes', label: 'Mobile City Eyes', icon: Sparkles },
         { id: 'events', label: 'AI Events', icon: Eye },
         { id: 'dashcam', label: 'Dashcam AI Feed', icon: Cpu },
         { id: 'fusion', label: 'Evidence Fusion', icon: Layers },

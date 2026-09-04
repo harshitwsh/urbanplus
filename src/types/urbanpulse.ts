@@ -13,6 +13,7 @@ export type NavigationTab =
   | 'fusion'
   | 'vision'
   | 'dashcam'
+  | 'mobile_eyes'
   | 'road'
   | 'traffic'
   | 'hotspots'
@@ -38,9 +39,49 @@ export type UserRole =
   | 'citizen';
 
 export type EventSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED' | 'Reported' | 'Under Review' | 'In Progress' | 'Resolved';
+export type IssueStatus = 'OPEN' | 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'ASSIGNED' | 'IN_PROGRESS' | 'FIELD_VERIFIED' | 'RESOLVED' | 'Reported' | 'Under Review' | 'In Progress' | 'Resolved' | 'Verified' | 'Assigned';
 export type IncidentStatus = 'NEW' | 'UNDER_REVIEW' | 'VERIFIED' | 'DISMISSED' | 'ESCALATED' | 'AWAITING_VERIFICATION' | 'REJECTED';
-export type DefectType = 'pothole' | 'waterlogging' | 'road_damage' | 'missing_divider' | 'missing_zebra' | 'damaged_sign' | 'infrastructure' | 'pedestrian_risk' | 'accident' | 'broken_streetlight' | 'garbage' | 'traffic_hazard' | 'other';
+
+export type IncidentSource = 
+  | 'citizen'
+  | 'traffic_police_dashcam'
+  | 'public_fleet'
+  | 'cctv'
+  | 'ai_detection'
+  | 'government'
+  | 'dashcam'
+  | 'surveillance';
+
+export type DefectType = 
+  | 'pothole'
+  | 'road_crack'
+  | 'road_damage'
+  | 'broken_footpath'
+  | 'damaged_bridge'
+  | 'fallen_tree'
+  | 'damaged_traffic_signal'
+  | 'accident'
+  | 'dangerous_road_condition'
+  | 'open_manhole'
+  | 'fire_hazard'
+  | 'unsafe_construction'
+  | 'fallen_electric_pole'
+  | 'broken_streetlight'
+  | 'garbage_dumping'
+  | 'water_leakage'
+  | 'waterlogging'
+  | 'drainage_problem'
+  | 'suspicious_hazard'
+  | 'public_safety_issue'
+  | 'infrastructure_vulnerability'
+  | 'missing_divider'
+  | 'missing_zebra'
+  | 'damaged_sign'
+  | 'infrastructure'
+  | 'pedestrian_risk'
+  | 'garbage'
+  | 'traffic_hazard'
+  | 'other';
 
 export interface CameraHealth {
   front: boolean;
@@ -231,4 +272,29 @@ export interface DemoStep {
     manualInspectionAvoided: boolean;
     observationsCount: number;
   };
+}
+
+export interface RoadSegmentCoverage {
+  id: string;
+  roadName: string;
+  coverageStatus: 'GREEN' | 'YELLOW' | 'RED';
+  lastMonitoredMinutesAgo: number;
+  activeMobileUnitsCount: number;
+  coordinates: [number, number][];
+}
+
+export interface IncidentCorrelation {
+  id: string;
+  masterCode: string;
+  primaryType: DefectType;
+  lat: number;
+  lng: number;
+  locationName: string;
+  sources: IncidentSource[];
+  citizenReportsCount: number;
+  dashcamDetectionsCount: number;
+  highestConfidence: number;
+  evidenceImages: string[];
+  status: IssueStatus;
+  createdAt: string;
 }

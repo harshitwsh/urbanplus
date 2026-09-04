@@ -14,7 +14,12 @@ import {
   Search,
   RefreshCw,
   Eye,
-  FileText
+  FileText,
+  Building2,
+  ShieldAlert,
+  Droplets,
+  HelpCircle,
+  CheckSquare
 } from 'lucide-react';
 
 export const CitizenReportView: React.FC = () => {
@@ -39,16 +44,63 @@ export const CitizenReportView: React.FC = () => {
   const [registeredReport, setRegisteredReport] = useState<CitizenReport | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  const issueTypes: { type: DefectType; label: string; icon: string; color: string }[] = [
-    { type: 'pothole', label: 'Pothole Hazard', icon: '🕳️', color: '#D97706' },
-    { type: 'road_damage', label: 'Road Damage / Cracks', icon: '🛣️', color: '#D97706' },
-    { type: 'accident', label: 'Traffic Accident', icon: '🚗', color: '#DC4C5A' },
-    { type: 'waterlogging', label: 'Waterlogging / Flooding', icon: '🌊', color: '#2563EB' },
-    { type: 'broken_streetlight', label: 'Broken Streetlight', icon: '💡', color: '#D97706' },
-    { type: 'garbage', label: 'Waste Dump / Garbage', icon: '🗑️', color: '#059669' },
-    { type: 'traffic_hazard', label: 'Traffic Hazard', icon: '🚦', color: '#2563EB' },
-    { type: 'infrastructure', label: 'Damaged Infrastructure', icon: '🏗️', color: '#4F46E5' },
-    { type: 'other', label: 'Other Public Vulnerability', icon: '⚠️', color: '#64748B' }
+  // 4 Grouped Issue Categories
+  const categoryGroups: {
+    groupName: string;
+    icon: any;
+    color: string;
+    items: { type: DefectType; label: string; icon: string }[];
+  }[] = [
+    {
+      groupName: 'ROAD & INFRASTRUCTURE',
+      icon: Building2,
+      color: '#D97706',
+      items: [
+        { type: 'pothole', label: 'Pothole', icon: '🕳️' },
+        { type: 'road_crack', label: 'Road Crack', icon: '🛣️' },
+        { type: 'road_damage', label: 'Road Damage', icon: '🚧' },
+        { type: 'broken_footpath', label: 'Broken Footpath', icon: '🚶' },
+        { type: 'damaged_bridge', label: 'Damaged Bridge', icon: '🌉' },
+        { type: 'fallen_tree', label: 'Fallen Tree', icon: '🌳' },
+        { type: 'damaged_traffic_signal', label: 'Damaged Traffic Signal', icon: '🚦' }
+      ]
+    },
+    {
+      groupName: 'PUBLIC SAFETY',
+      icon: ShieldAlert,
+      color: '#DC2626',
+      items: [
+        { type: 'accident', label: 'Accident', icon: '🚗' },
+        { type: 'dangerous_road_condition', label: 'Dangerous Road Condition', icon: '⚠️' },
+        { type: 'open_manhole', label: 'Open Manhole', icon: '🕳️' },
+        { type: 'fire_hazard', label: 'Fire Hazard', icon: '🔥' },
+        { type: 'unsafe_construction', label: 'Unsafe Construction', icon: '🏗️' },
+        { type: 'fallen_electric_pole', label: 'Fallen Electric Pole', icon: '⚡' }
+      ]
+    },
+    {
+      groupName: 'CITY SERVICES',
+      icon: Droplets,
+      color: '#2563EB',
+      items: [
+        { type: 'broken_streetlight', label: 'Broken Streetlight', icon: '💡' },
+        { type: 'garbage_dumping', label: 'Garbage Dumping', icon: '🗑️' },
+        { type: 'water_leakage', label: 'Water Leakage', icon: '🚰' },
+        { type: 'waterlogging', label: 'Waterlogging / Flooding', icon: '🌊' },
+        { type: 'drainage_problem', label: 'Drainage Problem', icon: '🌧️' }
+      ]
+    },
+    {
+      groupName: 'EMERGENCY / OTHER',
+      icon: HelpCircle,
+      color: '#64748B',
+      items: [
+        { type: 'suspicious_hazard', label: 'Suspicious Hazard', icon: '🚨' },
+        { type: 'public_safety_issue', label: 'Public Safety Issue', icon: '🛡️' },
+        { type: 'infrastructure_vulnerability', label: 'Infrastructure Vulnerability', icon: '🏛️' },
+        { type: 'other', label: 'Other Urban Issue', icon: '❓' }
+      ]
+    }
   ];
 
   // Auto-detect GPS on component mount
@@ -64,7 +116,7 @@ export const CitizenReportView: React.FC = () => {
           setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           setIsDetectingGps(false);
         },
-        (err) => {
+        () => {
           setIsDetectingGps(false);
         },
         { enableHighAccuracy: true, timeout: 8000 }
@@ -84,362 +136,303 @@ export const CitizenReportView: React.FC = () => {
 
   const handleNextStep = async () => {
     if (currentStep === 4) {
-      // Perform Smart Duplicate Detection before final submission
       setIsSubmitting(true);
-      const existingReports: CitizenReport[] = [
-        {
-          id: 'UP-2026-8091',
+      try {
+        const report = await CitizenReportService.submitReport({
           type: selectedType,
-          title: 'Existing Deep Pothole',
-          images: [],
-          lat: 28.4596,
-          lng: 77.0267,
-          locationName: 'Golf Course Road',
-          severity: 'HIGH',
+          title: `${selectedType.replace(/_/g, ' ').toUpperCase()} Reported by Citizen`,
+          description: description || `Citizen reported ${selectedType.replace(/_/g, ' ')} hazard at ${locationName}.`,
+          images: [imagePreview],
+          lat: coords.lat,
+          lng: coords.lng,
+          locationName,
+          severity,
+          source: 'citizen'
+        });
+
+        // Add to app context state
+        addSyntheticDefect({
+          id: report.id,
+          code: report.id,
+          type: report.type,
+          title: report.title,
+          description: report.description || '',
+          address: report.locationName,
+          lat: report.lat,
+          lng: report.lng,
+          timestamp: report.createdAt,
+          firstDetectedAt: report.createdAt,
+          lastVerifiedAt: report.createdAt,
+          initialBusId: 'CITIZEN-MOBILE',
+          routeId: 'CITIZEN-PORTAL',
+          initialConfidence: 95,
+          fusionConfidence: 95,
+          severity: report.severity,
           status: 'Reported',
-          source: 'citizen',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          verified: false
-        }
-      ];
+          evidenceCount: 1,
+          sightings: [],
+          imageUrl: report.images[0] || imagePreview,
+          assignedDept: 'Municipal Operations',
+          slaHours: 24,
+          source: 'citizen'
+        });
 
-      const dupes = CitizenReportService.findNearbyDuplicates(existingReports, coords.lat, coords.lng, selectedType, 50);
-
-      if (dupes.length > 0 && !showDuplicateWarning) {
-        setPotentialDuplicate(dupes[0]);
-        setShowDuplicateWarning(true);
+        setRegisteredReport(report);
+        setCurrentStep(5);
+      } catch (err) {
+        console.error('Report submission error:', err);
+      } finally {
         setIsSubmitting(false);
-        return;
       }
-
-      // Submit Report to Firestore
-      const newReport = await CitizenReportService.submitReport({
-        type: selectedType,
-        title: `${selectedType.replace('_', ' ').toUpperCase()} Hazard`,
-        description: description || 'Reported via Citizen Public Reporting Mobile Portal.',
-        images: [imagePreview],
-        lat: coords.lat,
-        lng: coords.lng,
-        locationName: locationName,
-        severity: severity,
-        source: 'citizen'
-      });
-
-      // Synchronize into shared application state
-      addSyntheticDefect({
-        type: selectedType,
-        title: newReport.title,
-        description: newReport.description,
-        address: newReport.locationName,
-        lat: newReport.lat,
-        lng: newReport.lng,
-        severity: newReport.severity,
-        imageUrl: imagePreview
-      });
-
-      setRegisteredReport(newReport);
-      setIsSubmitting(false);
-      setCurrentStep(5); // Confirmation
     } else {
-      setCurrentStep(prev => prev + 1);
+      setCurrentStep((prev) => prev + 1);
     }
   };
 
   return (
-    <div className="p-4 md:p-6 space-y-6 max-w-2xl mx-auto select-none font-sans bg-[#F7F8FA] min-h-screen">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 select-none font-sans bg-[#F7F8FA] min-h-screen">
       {/* Top Banner */}
-      <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-4 rounded-xl flex items-center justify-between shadow-card">
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-4 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-card">
         <div>
-          <span className="px-2.5 py-0.5 bg-[#EFF6FF] text-[#2563EB] text-[10px] font-mono font-bold rounded uppercase">
-            PUBLIC CITIZEN REPORTING PORTAL
-          </span>
-          <h2 className="text-base font-bold text-[#172033] mt-1">Report an Urban Infrastructure Issue</h2>
+          <div className="inline-flex items-center space-x-1.5 px-2.5 py-0.5 bg-[#EFF6FF] text-[#2563EB] border border-[#BFDBFE] rounded-full text-[11px] font-mono font-semibold mb-1">
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>CITIZEN PUBLIC PORTAL</span>
+          </div>
+          <h2 className="text-lg font-bold text-[#172033]">Report an Urban Issue in Real Time</h2>
+          <p className="text-xs text-[#64748B]">Help municipal teams fix potholes, broken streetlights, waterlogging, and safety hazards fast.</p>
         </div>
 
-        <button
-          onClick={() => setActiveTab('map')}
-          className="text-xs text-[#64748B] hover:text-[#172033] font-mono font-medium"
-        >
-          Cancel
-        </button>
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={() => setActiveTab('my_reports')}
+            className="px-3 py-1.5 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-md border border-[#CBD5E1] transition flex items-center space-x-1.5"
+          >
+            <FileText className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>My Reports</span>
+          </button>
+        </div>
       </div>
 
-      {/* Workflow Step Progress Bar */}
-      {currentStep <= 4 && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-3 shadow-card">
-          <div className="flex justify-between items-center text-xs font-mono text-[#64748B] mb-2">
-            <span>Step {currentStep} of 4</span>
-            <span className="font-bold text-[#2563EB]">
-              {currentStep === 1 && 'Select Issue Category'}
-              {currentStep === 2 && 'Upload Evidence Photo'}
-              {currentStep === 3 && 'GPS Location Capture'}
-              {currentStep === 4 && 'Review & Submit'}
-            </span>
-          </div>
-          <div className="w-full bg-[#F1F4F7] h-2 rounded-full overflow-hidden">
-            <div 
-              style={{ width: `${(currentStep / 4) * 100}%` }} 
-              className="bg-[#2563EB] h-full transition-all duration-300" 
-            />
-          </div>
+      {/* Step Progress Bar */}
+      <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-4 rounded-xl shadow-card">
+        <div className="flex items-center justify-between text-xs font-mono font-semibold text-[#64748B] mb-2">
+          <span className={currentStep >= 1 ? 'text-[#2563EB]' : ''}>1. CATEGORY</span>
+          <span className={currentStep >= 2 ? 'text-[#2563EB]' : ''}>2. EVIDENCE</span>
+          <span className={currentStep >= 3 ? 'text-[#2563EB]' : ''}>3. LOCATION</span>
+          <span className={currentStep >= 4 ? 'text-[#2563EB]' : ''}>4. DETAILS</span>
+          <span className={currentStep >= 5 ? 'text-[#059669]' : ''}>5. CONFIRMATION</span>
         </div>
-      )}
+        <div className="h-2 bg-[#F1F4F7] rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-[#2563EB] transition-all duration-300 rounded-full"
+            style={{ width: `${(currentStep / 5) * 100}%` }}
+          />
+        </div>
+      </div>
 
-      {/* STEP 1: Select Issue Type */}
+      {/* STEP 1: Select Category */}
       {currentStep === 1 && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-5 space-y-4 shadow-card">
-          <h3 className="text-xs font-semibold text-[#172033] font-mono uppercase tracking-wider">
-            STEP 1 — SELECT URBAN ISSUE CATEGORY
-          </h3>
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-5 rounded-xl space-y-6 shadow-card">
+          <div>
+            <h3 className="text-base font-bold text-[#172033]">What issue would you like to report?</h3>
+            <p className="text-xs text-[#64748B]">Select the category that best describes the urban hazard.</p>
+          </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {issueTypes.map((item) => {
-              const isSelected = selectedType === item.type;
+          <div className="space-y-6">
+            {categoryGroups.map((group) => {
+              const GroupIcon = group.icon;
               return (
-                <div
-                  key={item.type}
-                  onClick={() => setSelectedType(item.type)}
-                  className={`p-3.5 rounded-xl border transition cursor-pointer flex flex-col items-center text-center space-y-2 ${
-                    isSelected
-                      ? 'bg-[#EFF6FF] border-[#2563EB] shadow-md'
-                      : 'bg-[#F8FAFC] border-[#E2E8F0] hover:bg-[#F1F4F7]'
-                  }`}
-                >
-                  <span className="text-2xl">{item.icon}</span>
-                  <span className={`text-xs font-semibold ${isSelected ? 'text-[#1D4ED8]' : 'text-[#172033]'}`}>
-                    {item.label}
-                  </span>
+                <div key={group.groupName} className="space-y-2.5">
+                  <div className="flex items-center space-x-2 border-b border-[#E2E8F0] pb-1.5">
+                    <GroupIcon className="w-4 h-4" style={{ color: group.color }} />
+                    <span className="text-xs font-mono font-bold text-[#172033] tracking-wide">{group.groupName}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                    {group.items.map((item) => {
+                      const isSelected = selectedType === item.type;
+                      return (
+                        <div
+                          key={item.type}
+                          onClick={() => setSelectedType(item.type)}
+                          className={`p-3 rounded-lg border text-left cursor-pointer transition flex items-center space-x-2.5 ${
+                            isSelected
+                              ? 'border-[#2563EB] bg-[#EFF6FF] shadow-sm'
+                              : 'border-[#E2E8F0] bg-[#FFFFFF] hover:border-[#CBD5E1] hover:bg-[#F8FAFC]'
+                          }`}
+                        >
+                          <span className="text-xl">{item.icon}</span>
+                          <div className="min-w-0 flex-1">
+                            <span className={`text-xs font-semibold block truncate ${isSelected ? 'text-[#1D4ED8]' : 'text-[#172033]'}`}>
+                              {item.label}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="pt-2 flex justify-end">
-            <button
-              onClick={handleNextStep}
-              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5"
-            >
-              <span>Next: Capture Photo</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 2: Evidence Photo */}
-      {currentStep === 2 && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-5 space-y-4 shadow-card">
-          <h3 className="text-xs font-semibold text-[#172033] font-mono uppercase tracking-wider">
-            STEP 2 — CAPTURE OR UPLOAD EVIDENCE PHOTO
-          </h3>
-
-          <div className="p-6 bg-[#F8FAFC] border-2 border-dashed border-[#CBD5E1] rounded-xl text-center space-y-3">
-            <img 
-              src={imagePreview} 
-              alt="Evidence Preview" 
-              className="max-h-48 rounded-lg mx-auto border border-[#E2E8F0] shadow-sm object-cover" 
-            />
-
-            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-              <label className="px-4 py-2 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition cursor-pointer flex items-center space-x-1.5">
-                <Camera className="w-4 h-4" />
-                <span>📷 Take Photo</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  capture="environment"
-                  onChange={handleImageFileChange}
-                  className="hidden" 
-                />
-              </label>
-
-              <label className="px-4 py-2 bg-[#FFFFFF] hover:bg-[#F1F4F7] text-[#172033] border border-[#CBD5E1] text-xs font-semibold rounded-lg transition cursor-pointer flex items-center space-x-1.5">
-                <Upload className="w-4 h-4" />
-                <span>🖼 Upload Image</span>
-                <input 
-                  type="file" 
-                  accept="image/*" 
-                  onChange={handleImageFileChange}
-                  className="hidden" 
-                />
-              </label>
-            </div>
-          </div>
-
-          <div className="flex justify-between pt-2">
-            <button
-              onClick={() => setCurrentStep(1)}
-              className="px-4 py-2 bg-[#F8FAFC] hover:bg-[#F1F1F1] text-[#64748B] text-xs font-semibold rounded-lg border border-[#CBD5E1] flex items-center space-x-1"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-
-            <button
-              onClick={handleNextStep}
-              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5"
-            >
-              <span>Next: GPS Geotag</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 3: GPS Geotag */}
-      {currentStep === 3 && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-5 space-y-4 shadow-card">
-          <h3 className="text-xs font-semibold text-[#172033] font-mono uppercase tracking-wider">
-            STEP 3 — AUTOMATIC GPS GEOLOCATION CAPTURE
-          </h3>
-
-          <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl space-y-3 font-mono text-xs">
-            <div className="flex justify-between items-center border-b border-[#E2E8F0] pb-2">
-              <span className="font-bold text-[#2563EB] flex items-center space-x-1.5">
-                <MapPin className="w-4 h-4" />
-                <span>GEOTAG TELEMETRY</span>
-              </span>
-              <button 
-                onClick={handleDetectGPS} 
-                className="text-[#2563EB] hover:underline flex items-center space-x-1 text-[11px]"
-              >
-                <RefreshCw className={`w-3 h-3 ${isDetectingGps ? 'animate-spin' : ''}`} />
-                <span>Re-detect</span>
-              </button>
-            </div>
-
-            <div className="space-y-1 text-[#526174]">
-              <div className="flex justify-between">
-                <span>Latitude:</span>
-                <span className="text-[#172033] font-bold">{coords.lat.toFixed(6)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Longitude:</span>
-                <span className="text-[#172033] font-bold">{coords.lng.toFixed(6)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Detected Address:</span>
-                <span className="text-[#172033] font-sans font-semibold truncate max-w-[200px]">{locationName}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-[#64748B] font-mono text-[10px] uppercase block">
-              Adjust Location Name / Landmark
-            </label>
-            <input
-              type="text"
-              value={locationName}
-              onChange={(e) => setLocationName(e.target.value)}
-              className="w-full p-2.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-xs text-[#172033] focus:outline-none focus:border-[#2563EB]"
-            />
-          </div>
-
-          <div className="flex justify-between pt-2">
+          <div className="flex justify-end pt-2">
             <button
               onClick={() => setCurrentStep(2)}
-              className="px-4 py-2 bg-[#F8FAFC] hover:bg-[#F1F1F1] text-[#64748B] text-xs font-semibold rounded-lg border border-[#CBD5E1] flex items-center space-x-1"
+              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition shadow-sm flex items-center space-x-1.5"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
-            </button>
-
-            <button
-              onClick={handleNextStep}
-              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center space-x-1.5"
-            >
-              <span>Next: Final Review</span>
+              <span>Next: Add Evidence</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
       )}
 
-      {/* STEP 4: Review & Description & Duplicate Check */}
-      {currentStep === 4 && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-5 space-y-4 shadow-card">
-          <h3 className="text-xs font-semibold text-[#172033] font-mono uppercase tracking-wider">
-            STEP 4 — REVIEW REPORT & SUBMIT
-          </h3>
-
-          {showDuplicateWarning && potentialDuplicate && (
-            <div className="p-4 bg-[#FFFBEB] border border-[#FCD34D] rounded-xl space-y-2 text-xs">
-              <div className="flex items-center space-x-2 text-[#D97706] font-bold font-mono">
-                <AlertTriangle className="w-4 h-4" />
-                <span>POSSIBLE EXISTING REPORT FOUND NEARBY</span>
-              </div>
-              <p className="text-[#64748B] font-sans">
-                A similar <strong>{potentialDuplicate.type}</strong> report ({potentialDuplicate.id}) was registered within 50 meters of your coordinates.
-              </p>
-              <div className="flex space-x-2 pt-1 font-mono">
-                <button
-                  onClick={() => {
-                    setActiveTab('my_reports');
-                  }}
-                  className="px-3 py-1 bg-[#D97706] text-white text-[11px] font-bold rounded"
-                >
-                  View Existing Report
-                </button>
-                <button
-                  onClick={handleNextStep}
-                  className="px-3 py-1 bg-[#FFFFFF] border border-[#CBD5E1] text-[#172033] text-[11px] font-bold rounded"
-                >
-                  Submit Anyway
-                </button>
-              </div>
-            </div>
-          )}
-
-          <div className="space-y-1">
-            <label className="text-xs font-semibold text-[#64748B] font-mono text-[10px] uppercase block">
-              Additional Details / Description (Optional)
-            </label>
-            <textarea
-              rows={3}
-              placeholder="Describe hazard size, lane obstruction, or urgency..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg text-xs text-[#172033] placeholder-[#8290A3] focus:outline-none focus:border-[#2563EB]"
-            />
+      {/* STEP 2: Add Evidence (Photo Capture / Upload) */}
+      {currentStep === 2 && (
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-5 rounded-xl space-y-5 shadow-card">
+          <div>
+            <h3 className="text-base font-bold text-[#172033]">Step 2: Add Photo Evidence</h3>
+            <p className="text-xs text-[#64748B]">Take or upload a clear photo showing the issue.</p>
           </div>
 
-          <div className="p-3 bg-[#F8FAFC] rounded-lg border border-[#E2E8F0] space-y-1.5 text-xs">
-            <div className="flex justify-between font-mono">
-              <span className="text-[#64748B]">Category:</span>
-              <span className="font-bold text-[#172033] uppercase">{selectedType}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div className="h-56 bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl relative overflow-hidden flex items-center justify-center">
+              <img src={imagePreview} alt="Issue preview" className="w-full h-full object-cover" />
             </div>
-            <div className="flex justify-between font-mono">
-              <span className="text-[#64748B]">Location:</span>
-              <span className="font-bold text-[#172033]">{locationName}</span>
-            </div>
-            <div className="flex justify-between font-mono">
-              <span className="text-[#64748B]">Initial Status:</span>
-              <span className="font-bold text-[#059669]">Reported (Pending Review)</span>
+
+            <div className="space-y-3">
+              <label className="p-4 bg-[#EFF6FF] border border-dashed border-[#93C5FD] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-[#DBEAFE] transition text-center">
+                <Upload className="w-6 h-6 text-[#2563EB] mb-1" />
+                <span className="text-xs font-bold text-[#1D4ED8]">Upload Photo from Device</span>
+                <span className="text-[10px] text-[#64748B]">PNG, JPG up to 10MB</span>
+                <input type="file" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+              </label>
+
+              <label className="p-4 bg-[#ECFDF5] border border-dashed border-[#6EE7B7] rounded-xl flex flex-col items-center justify-center cursor-pointer hover:bg-[#D1FAE5] transition text-center">
+                <Camera className="w-6 h-6 text-[#059669] mb-1" />
+                <span className="text-xs font-bold text-[#047857]">Take Photo with Camera</span>
+                <span className="text-[10px] text-[#64748B]">Mobile direct camera lock</span>
+                <input type="file" accept="image/*" capture="environment" onChange={handleImageFileChange} className="hidden" />
+              </label>
             </div>
           </div>
 
-          <div className="flex justify-between pt-2">
+          <div className="flex items-center justify-between pt-3">
+            <button
+              onClick={() => setCurrentStep(1)}
+              className="px-4 py-2 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-lg transition"
+            >
+              Back
+            </button>
             <button
               onClick={() => setCurrentStep(3)}
-              className="px-4 py-2 bg-[#F8FAFC] hover:bg-[#F1F1F1] text-[#64748B] text-xs font-semibold rounded-lg border border-[#CBD5E1] flex items-center space-x-1"
+              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition flex items-center space-x-1.5"
             >
-              <ArrowLeft className="w-4 h-4" />
-              <span>Back</span>
+              <span>Next: Confirm Location</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
+          </div>
+        </div>
+      )}
 
+      {/* STEP 3: Auto Geotag & Adjust Pin */}
+      {currentStep === 3 && (
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-5 rounded-xl space-y-5 shadow-card">
+          <div>
+            <h3 className="text-base font-bold text-[#172033]">Step 3: Confirm GPS Geotag</h3>
+            <p className="text-xs text-[#64748B]">Your precise location is captured automatically via browser GPS.</p>
+          </div>
+
+          <div className="p-3 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center space-x-3">
+              <MapPin className="w-5 h-5 text-[#DC2626] shrink-0" />
+              <div>
+                <span className="font-bold text-xs text-[#172033] block">{locationName}</span>
+                <span className="text-[11px] font-mono text-[#64748B]">Coordinates: {coords.lat.toFixed(5)}, {coords.lng.toFixed(5)}</span>
+              </div>
+            </div>
+
+            <button
+              onClick={handleDetectGPS}
+              disabled={isDetectingGps}
+              className="px-3 py-1.5 bg-[#FFFFFF] hover:bg-[#F1F4F7] text-[#2563EB] text-xs font-semibold rounded border border-[#CBD5E1] transition flex items-center space-x-1 shrink-0"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isDetectingGps ? 'animate-spin' : ''}`} />
+              <span>{isDetectingGps ? 'Detecting...' : 'Re-Detect GPS'}</span>
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <button
+              onClick={() => setCurrentStep(2)}
+              className="px-4 py-2 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-lg transition"
+            >
+              Back
+            </button>
+            <button
+              onClick={() => setCurrentStep(4)}
+              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition flex items-center space-x-1.5"
+            >
+              <span>Next: Add Details</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* STEP 4: Details & Submit */}
+      {currentStep === 4 && (
+        <div className="bg-[#FFFFFF] border border-[#E2E8F0] p-5 rounded-xl space-y-5 shadow-card">
+          <div>
+            <h3 className="text-base font-bold text-[#172033]">Step 4: Additional Details</h3>
+            <p className="text-xs text-[#64748B]">Provide notes or severity info for the municipal field team.</p>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#172033] mb-1">Issue Severity</label>
+              <div className="grid grid-cols-4 gap-2 text-xs font-mono">
+                {(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'] as EventSeverity[]).map((sev) => (
+                  <button
+                    key={sev}
+                    type="button"
+                    onClick={() => setSeverity(sev)}
+                    className={`py-2 rounded-md font-bold border transition ${
+                      severity === sev ? 'bg-[#2563EB] text-white border-[#2563EB]' : 'bg-[#F8FAFC] text-[#64748B] border-[#E2E8F0]'
+                    }`}
+                  >
+                    {sev}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-[#172033] mb-1">Description / Remarks (Optional)</label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="e.g. Large pothole near intersection causing severe traffic slowdown..."
+                rows={3}
+                className="w-full p-3 bg-[#F8FAFC] border border-[#CBD5E1] rounded-lg text-xs text-[#172033] focus:outline-none focus:border-[#2563EB] focus:bg-[#FFFFFF]"
+              />
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between pt-3">
+            <button
+              onClick={() => setCurrentStep(3)}
+              className="px-4 py-2 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-lg transition"
+            >
+              Back
+            </button>
             <button
               onClick={handleNextStep}
               disabled={isSubmitting}
-              className="px-6 py-2.5 bg-[#059669] hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg shadow-md transition flex items-center space-x-1.5 disabled:opacity-50"
+              className="px-6 py-2.5 bg-[#059669] hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition shadow-md flex items-center space-x-1.5"
             >
-              {isSubmitting ? (
-                <RefreshCw className="w-4 h-4 animate-spin" />
-              ) : (
-                <ShieldCheck className="w-4 h-4" />
-              )}
-              <span>Submit Report to Command Center</span>
+              {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
+              <span>SUBMIT REPORT</span>
             </button>
           </div>
         </div>
@@ -447,54 +440,53 @@ export const CitizenReportView: React.FC = () => {
 
       {/* STEP 5: Confirmation Screen */}
       {currentStep === 5 && registeredReport && (
-        <div className="bg-[#FFFFFF] border border-[#E2E8F0] rounded-xl p-6 text-center space-y-5 shadow-2xl">
-          <div className="w-12 h-12 rounded-full bg-[#059669]/10 border border-[#059669]/30 flex items-center justify-center mx-auto text-[#059669]">
-            <CheckCircle2 className="w-7 h-7" />
+        <div className="bg-[#FFFFFF] border border-[#A7F3D0] p-6 rounded-xl space-y-6 shadow-xl text-center">
+          <div className="w-16 h-16 rounded-full bg-[#ECFDF5] border border-[#6EE7B7] text-[#059669] flex items-center justify-center mx-auto shadow-sm">
+            <CheckCircle2 className="w-10 h-10" />
           </div>
 
-          <div className="space-y-1">
-            <span className="px-2.5 py-1 bg-[#ECFDF5] text-[#059669] text-xs font-mono font-bold rounded">
-              STATUS: REPORTED
-            </span>
-            <h2 className="text-xl font-bold text-[#172033] pt-1">REPORT SUCCESSFULLY REGISTERED</h2>
-            <p className="text-xs text-[#64748B]">
-              Your report has been transmitted in real time to the UrbanPulse Command Center & Municipal Maintenance Dashboard.
+          <div className="space-y-2">
+            <h3 className="text-xl font-extrabold text-[#172033]">REPORT SUCCESSFULLY SUBMITTED</h3>
+            <p className="text-xs text-[#64748B] max-w-md mx-auto">
+              Your report has been received by the UrbanPulse Municipal Command Center. Nearby traffic police and field teams have been notified.
             </p>
           </div>
 
-          <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl font-mono text-xs space-y-2 text-left">
-            <div className="flex justify-between border-b border-[#E2E8F0] pb-1.5">
+          <div className="p-4 bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl max-w-md mx-auto text-left font-mono text-xs space-y-2">
+            <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
               <span className="text-[#64748B]">REPORT ID:</span>
               <span className="font-bold text-[#2563EB]">{registeredReport.id}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-[#64748B]">Location:</span>
-              <span className="text-[#172033] font-bold">{registeredReport.locationName}</span>
+            <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
+              <span className="text-[#64748B]">TYPE:</span>
+              <span className="font-bold text-[#172033] uppercase">{registeredReport.type.replace(/_/g, ' ')}</span>
+            </div>
+            <div className="flex justify-between border-b border-[#E2E8F0] pb-2">
+              <span className="text-[#64748B]">STATUS:</span>
+              <span className="font-bold text-[#059669]">REPORTED & LOGGED</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-[#64748B]">GPS Geotag:</span>
-              <span className="text-[#172033] font-bold">{registeredReport.lat.toFixed(4)}, {registeredReport.lng.toFixed(4)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-[#64748B]">Submitted At:</span>
-              <span className="text-[#8290A3]">{new Date(registeredReport.createdAt).toLocaleTimeString('en-IN')}</span>
+              <span className="text-[#64748B]">LOCATION:</span>
+              <span className="font-semibold text-[#172033] truncate max-w-[200px]">{registeredReport.locationName}</span>
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 pt-2 font-mono text-xs">
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
             <button
               onClick={() => setActiveTab('my_reports')}
-              className="flex-1 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold rounded-lg shadow-sm transition flex items-center justify-center space-x-1.5"
+              className="px-5 py-2.5 bg-[#2563EB] hover:bg-blue-700 text-white text-xs font-semibold rounded-lg transition flex items-center space-x-1.5 shadow-sm"
             >
               <FileText className="w-4 h-4" />
-              <span>Track Report Progress</span>
+              <span>Track My Submitted Reports</span>
             </button>
-
             <button
-              onClick={() => setActiveTab('map')}
-              className="flex-1 py-2.5 bg-[#F8FAFC] hover:bg-[#F1F4F7] text-[#172033] border border-[#CBD5E1] font-semibold rounded-lg transition"
+              onClick={() => {
+                setCurrentStep(1);
+                setRegisteredReport(null);
+              }}
+              className="px-5 py-2.5 bg-[#F1F4F7] hover:bg-[#E2E8F0] text-[#172033] text-xs font-semibold rounded-lg transition"
             >
-              Return to Map
+              Report Another Issue
             </button>
           </div>
         </div>

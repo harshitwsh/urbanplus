@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@types/three": "^0.185.4",
     "cesium": "^1.145.0",
     "clsx": "^2.1.1",
     "firebase": "^12.18.0",
@@ -19,6 +20,7 @@
     "react-leaflet": "^4.2.1",
     "recharts": "^2.12.7",
     "tailwind-merge": "^2.5.2",
+    "three": "^0.185.1",
     "vite-plugin-cesium": "^1.2.23"
   },
   "devDependencies": {

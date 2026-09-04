@@ -385,6 +385,20 @@ export const UrbanMap: React.FC = () => {
       }
     });
 
+    // Force layout recalculation to prevent white blank container
+    setTimeout(() => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    }, 150);
+
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+
     // Check GPS Permissions
     if (navigator.permissions && navigator.permissions.query) {
       navigator.permissions.query({ name: 'geolocation' as PermissionName })
@@ -403,6 +417,7 @@ export const UrbanMap: React.FC = () => {
     }
 
     return () => {
+      window.removeEventListener('resize', handleResize);
       if (watchIdRef.current !== null && 'geolocation' in navigator) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
@@ -424,13 +439,11 @@ export const UrbanMap: React.FC = () => {
 
     if (mapMode === 'SATELLITE') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 18,
-        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics'
+        maxZoom: 19
       }).addTo(map);
     } else if (mapMode === 'HYBRID') {
       tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 18,
-        attribution: 'Tiles &copy; Esri'
+        maxZoom: 19
       }).addTo(map);
 
       // Transparent Road & Place Labels Overlay from Esri
@@ -439,17 +452,17 @@ export const UrbanMap: React.FC = () => {
         pane: 'markerPane'
       }).addTo(map);
     } else if (mapMode === 'URBAN_INTELLIGENCE') {
-      tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        maxZoom: 16,
-        attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ'
+      tileLayerRef.current = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 19
       }).addTo(map);
     } else {
       // STANDARD: OpenStreetMap Standard with visible roads, street names, POIs
       tileLayerRef.current = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors'
+        maxZoom: 19
       }).addTo(map);
     }
+    
+    map.invalidateSize();
   }, [mapMode]);
 
   // Real Geocoding Search using OpenStreetMap Nominatim API

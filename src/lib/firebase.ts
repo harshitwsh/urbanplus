@@ -3,21 +3,32 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
+// Support Vercel / Vite environment variables with production defaults
+const env = (import.meta as unknown as { env?: Record<string, string> })?.env || {};
+
 const firebaseConfig = {
-  apiKey: "AIzaSyDh8sNuxAeTWGgJTLBwwNmc5pJF-ERVsOk",
-  authDomain: "urbanpulse-2026.firebaseapp.com",
-  projectId: "urbanpulse-2026",
-  storageBucket: "urbanpulse-2026.firebasestorage.app",
-  messagingSenderId: "235538520233",
-  appId: "1:235538520233:web:c934aecdaabc30f215b1b8",
-  measurementId: "G-FBSDMSC80Z"
+  apiKey: env.VITE_FIREBASE_API_KEY || env.NEXT_PUBLIC_FIREBASE_API_KEY || "AIzaSyDh8sNuxAeTWGgJTLBwwNmc5pJF-ERVsOk",
+  authDomain: env.VITE_FIREBASE_AUTH_DOMAIN || env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || "urbanpulse-2026.firebaseapp.com",
+  projectId: env.VITE_FIREBASE_PROJECT_ID || env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || "urbanpulse-2026",
+  storageBucket: env.VITE_FIREBASE_STORAGE_BUCKET || env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || "urbanpulse-2026.firebasestorage.app",
+  messagingSenderId: env.VITE_FIREBASE_MESSAGING_SENDER_ID || env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || "235538520233",
+  appId: env.VITE_FIREBASE_APP_ID || env.NEXT_PUBLIC_FIREBASE_APP_ID || "1:235538520233:web:c934aecdaabc30f215b1b8",
+  measurementId: env.VITE_FIREBASE_MEASUREMENT_ID || env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || "G-FBSDMSC80Z"
 };
 
-// Initialize Firebase without breaking SSR or localhost development
-export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// Log active Firebase config (never expose API keys or secrets)
+console.log("🔥 FIREBASE ACTIVE CONFIG:", {
+  projectId: firebaseConfig.projectId,
+  authDomain: firebaseConfig.authDomain,
+  appId: firebaseConfig.appId
+});
 
+// Single singleton Firebase instance
+export const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
+
+console.log("🔥 FIRESTORE INITIALIZED:", db.app.options.projectId);
 
 export default app;
